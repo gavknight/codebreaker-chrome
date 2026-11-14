@@ -305,11 +305,33 @@ const startPad=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.4,32),new THREE.Me
 const padLabel=textSprite();padLabel.scale.set(12,3,1);padLabel.position.set(L.x,4,L.z-10);scene.add(padLabel);paint(padLabel,[['START',150,'#3aff6a',190]]);
 // you, as a blocky character (only seen in the lobby)
 const me=new THREE.Group();scene.add(me);
-const limb=(w,h,d,c,x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.y=-h/2;g.add(m);me.add(g);return g};
-const torso=new THREE.Mesh(new THREE.BoxGeometry(2,2,1),M(0xff8a2a));torso.position.y=3;me.add(torso);
-const headM=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.2,1.2),M(0xffd23b));headM.position.y=4.6;me.add(headM);
-const face=new THREE.Mesh(new THREE.PlaneGeometry(.8,.5),new THREE.MeshBasicMaterial({color:0x111111}));face.position.set(0,4.6,.61);face.scale.set(.6,.3,1);me.add(face);
-const armL=limb(1,2,1,0xffd23b,-1.5,4),armR=limb(1,2,1,0xffd23b,1.5,4),legL=limb(1,2,1,0x2a5bd8,-.5,2),legR=limb(1,2,1,0x2a5bd8,.5,2);
+// FiverFlow's avatar (from his Roblox screenshot): white head, smile + pixel sunglasses, green hood, red headband,
+// orange hair, gold crown, orange pumpkin jacket over a black shirt, black pants with white skulls
+const tex=(w,h,draw)=>{const cv=document.createElement('canvas');cv.width=w;cv.height=h;draw(cv.getContext('2d'),w,h);const t=new THREE.CanvasTexture(cv);t.magFilter=THREE.NearestFilter;return new THREE.MeshLambertMaterial({map:t})};
+const pumpkinCloth=tex(128,128,(x,w,h)=>{x.fillStyle='#ff7a1a';x.fillRect(0,0,w,h);for(let i=0;i<7;i++){const px=(i*47)%w+8,py=(i*37)%h+10;x.fillStyle='#1a1008';x.beginPath();x.arc(px,py,11,0,7);x.fill();x.fillStyle='#ffb000';x.fillRect(px-5,py-3,3,3);x.fillRect(px+2,py-3,3,3);x.fillRect(px-5,py+3,10,2)}
+ x.fillStyle='#fff';for(let i=0;i<5;i++){x.fillRect((i*29+60)%w,(i*53+40)%h,8,4)}});
+const shirt=tex(64,64,(x,w,h)=>{x.fillStyle='#ff7a1a';x.fillRect(0,0,w,h);x.fillStyle='#0a0a0a';x.fillRect(w*.3,0,w*.4,h);x.fillStyle='#1a1008';[[8,14],[10,44],[52,26],[54,52]].forEach(([px,py])=>{x.beginPath();x.arc(px,py,5,0,7);x.fill()})});
+const skullPants=tex(64,128,(x,w,h)=>{x.fillStyle='#0c0c0c';x.fillRect(0,0,w,h);for(let r=0;r<6;r++)for(let c=0;c<3;c++){const px=8+c*22+(r%2)*6,py=10+r*20;x.fillStyle='#f0f0f0';x.beginPath();x.arc(px,py,6,0,7);x.fill();x.fillRect(px-3,py+3,6,5);x.fillStyle='#000';x.fillRect(px-3,py-2,2,3);x.fillRect(px+1,py-2,2,3)}});
+const faceMat=tex(128,128,(x,w,h)=>{x.fillStyle='#ffffff';x.fillRect(0,0,w,h);
+ const px=(cx,cy,pat)=>pat.forEach((row,j)=>[...row].forEach((ch,i)=>{if(ch!=='.'){x.fillStyle=ch==='#'?'#000':'#fff';x.fillRect(cx+i*4,cy+j*4,4,4)}}));   // pixel "deal with it" sunglasses
+ const lens=['#########','#.#.#####','##.#.####','.#######.','..#####..'];px(14,38,lens);px(66,38,lens);x.fillStyle='#000';x.fillRect(48,42,20,4);
+ x.strokeStyle='#000';x.lineWidth=5;x.beginPath();x.arc(64,74,18,.25,Math.PI-.25);x.stroke()});
+const hoodMat=tex(64,64,(x,w,h)=>{x.fillStyle='#2f5a1e';x.fillRect(0,0,w,h);x.fillStyle='#c8b830';for(let i=0;i<60;i++)x.fillRect((i*13)%w,(i*29)%h,2,2)});
+const white=M(0xf4f4f4),black=M(0x0a0a0a);
+const limb=(w,h,d,mat,x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.y=-h/2;g.add(m);me.add(g);return g};
+const torso=new THREE.Mesh(new THREE.BoxGeometry(2,2,1),[pumpkinCloth,pumpkinCloth,pumpkinCloth,pumpkinCloth,shirt,pumpkinCloth]);torso.position.y=3;me.add(torso);
+const headM=new THREE.Mesh(new THREE.BoxGeometry(1.25,1.25,1.25),[white,white,white,white,faceMat,white]);headM.position.y=4.65;me.add(headM);
+const hood=new THREE.Group();hood.position.y=4.65;me.add(hood);   // the green hood around the head (open at the front)
+[[0,.78,0,1.65,.3,1.55],[-.78,0,0,.3,1.6,1.55],[.78,0,0,.3,1.6,1.55],[0,0,-.78,1.65,1.6,.3]].forEach(([x,y,z,w,h,d])=>{const p=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),hoodMat);p.position.set(x,y,z);hood.add(p)});
+const band=new THREE.Mesh(new THREE.BoxGeometry(1.35,.18,1.35),M(0xd81e28));band.position.set(0,.5,0);hood.add(band);   // red headband
+// orange hair: a short fringe above the headband, and long locks down the sides
+for(let i=0;i<7;i++){const dr=new THREE.Mesh(new THREE.BoxGeometry(.2,.32,.2),M(i%2?0xc86a1a:0xe08a2a));dr.position.set(-.54+i*.18,.72,.6);dr.rotation.z=(i-3)*.12;hood.add(dr)}
+for(const sx of[-1,1])for(let i=0;i<4;i++){const dr=new THREE.Mesh(new THREE.BoxGeometry(.2,.95,.2),M(i%2?0xc86a1a:0xe08a2a));dr.position.set(sx*.62,.15-i*.05,.45-i*.28);dr.rotation.z=sx*.12;hood.add(dr)}
+const crown=new THREE.Group();crown.position.set(-.55,1.15,0);crown.rotation.z=.5;hood.add(crown);const gold=new THREE.MeshLambertMaterial({color:0xffd23b,emissive:0x553300});
+const ring=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.25,12,1,true),gold);ring.material.side=THREE.DoubleSide;crown.add(ring);
+for(let i=0;i<5;i++){const sp=new THREE.Mesh(new THREE.ConeGeometry(.12,.38,4),gold);const an=i/5*Math.PI*2;sp.position.set(Math.cos(an)*.42,.3,Math.sin(an)*.42);crown.add(sp)}
+const armL=limb(1,2,1,pumpkinCloth,-1.5,4),armR=limb(1,2,1,pumpkinCloth,1.5,4),legL=limb(1,2,1,skullPants,-.5,2),legR=limb(1,2,1,skullPants,.5,2);
+[armL,armR].forEach(g=>{const hand=new THREE.Mesh(new THREE.BoxGeometry(.9,.45,.9),white);hand.position.y=-2.1;g.add(hand)});
 const title=textSprite(null,1024,200);title.scale.set(11,2.15,1);me.add(title);title.position.y=7.2;
 function drawTitle(){const a=ACH.find(a=>a.id===SAVE.equipped);const stat='💀 '+SAVE.deaths+' deaths · 📖 Best: '+(SAVE.best?'Chapter '+SAVE.best:'none yet');paint(title,a?[['🏆 '+a.name,80,'#ffd23b',85],[stat,46,'#eeeeee',170]]:[[stat,50,'#eeeeee',120]])}
 const LB={pos:L.clone().add(new THREE.Vector3(0,0,12)),face:Math.PI,camYaw:0,count:0,walk:0};
