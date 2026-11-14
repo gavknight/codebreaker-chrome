@@ -27,6 +27,20 @@ canvas{display:block}
 #kgrid button:hover{background:#3c3c48}
 #push{font:900 44px 'Arial Black';padding:22px 60px;border-radius:16px;border:4px solid #fff;background:#c81020;color:#fff;cursor:pointer}
 #hb{position:fixed;left:50%;bottom:60px;transform:translateX(-50%);z-index:16;text-align:center}#hbc{background:rgba(10,0,2,.85);border:3px solid #ff2235;border-radius:16px}
+#lobbyUI{position:fixed;inset:0;z-index:6;pointer-events:none}
+#trophy{position:absolute;left:18px;top:50%;width:96px;height:96px;margin-top:-48px;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 0 10px #ffb000);transition:transform .1s}#trophy:hover{transform:scale(1.08)}
+#lobbyHint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-family:system-ui;font-size:16px;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:10px;white-space:nowrap}
+#count{position:absolute;left:50%;top:30%;transform:translateX(-50%);font-size:90px;color:#3aff6a;text-shadow:0 0 30px #3aff6a;display:none}
+#achWin{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,94vw);max-height:80vh;z-index:18;background:#140a0e;border:3px solid #ffd23b;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+#achWin h2{margin:0;text-align:center;color:#ffd23b;font-size:38px}
+#achList{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:6px}
+.ach{display:flex;align-items:center;gap:12px;border:2px solid #5a5060;border-radius:12px;padding:8px;background:#282228}
+.ach.got{border-color:#ffd23b;background:#46320a}.ach img{width:70px;height:70px}.ach.lock img{opacity:.3}
+.ach .t{flex:1}.ach .n{font-size:22px;color:#ffd23b}.ach.lock .n{color:#ccc}.ach .d{font-family:system-ui;font-size:15px;opacity:.85}
+.ach button{font:inherit;font-size:16px;padding:8px 14px;border-radius:10px;border:0;background:#c8961e;color:#fff;cursor:pointer}.ach button.on{background:#28aa46}
+#achClose{align-self:center;font:inherit;font-size:20px;padding:8px 30px;border-radius:10px;border:0;background:#5a2830;color:#fff;cursor:pointer}
+#banner{position:fixed;left:50%;top:-140px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:14px;background:#2a1904;border:4px solid #ffd23b;border-radius:16px;padding:10px 22px 10px 10px;transition:top .5s;pointer-events:none}
+#banner img{width:84px}#banner .a{color:#ffd23b;font-size:26px}#banner .b{font-size:24px}#banner .c{font-family:system-ui;font-size:16px;opacity:.85}
 #scare{position:fixed;inset:0;z-index:30;display:none}
 #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity 1.2s;display:flex;align-items:center;justify-content:center;font-size:60px;color:#ff2235;text-shadow:0 0 30px #f00}
 </style></head><body>
@@ -37,12 +51,16 @@ canvas{display:block}
  <button class="btn" id="play">▶ PLAY</button>
  <p style="font-size:15px">WASD move · Mouse look · <b>Hold SHIFT to crouch (quiet)</b> · Space jump · <b>E / Click</b> to use · Esc pause</p>
  <p style="font-size:13px;opacity:.5">A game by FiverFlow · Chrome edition</p></div>
-<div id="dead" class="screen hide"><h1 style="font-size:90px">YOU DIED</h1><p id="deadTip"></p><button class="btn" id="revive">❤️ REVIVE (FREE)</button><button class="btn" id="restart">🔁 START OVER</button></div>
+<div id="dead" class="screen hide"><h1 style="font-size:90px">YOU DIED</h1><p id="deadTip"></p><button class="btn" id="revive">❤️ REVIVE (FREE)</button><button class="btn" id="restart">🔁 START OVER</button><button class="btn" id="toLobby">🏠 LOBBY</button></div>
 <div id="paused" class="screen hide"><h2>PAUSED</h2><button class="btn" id="resume">▶ RESUME</button></div>
 <div id="keypad" class="hide"><div class="panel"><div id="kdisp">_ _ _ _</div><div id="kgrid"></div><p style="font-family:system-ui;margin:12px 0 0;opacity:.7">Esc to step away</p></div></div>
 <div id="trap" class="hide"><div class="panel" style="background:#2a0006;border-color:#ff2235"><h2 style="margin:0 0 6px">IT'S A TRAP!</h2><p style="font-family:system-ui;margin:0 0 14px">Click PUSH <b id="pushLeft">50</b> times!</p><button id="push">PUSH!</button></div></div>
 <div id="hb" class="hide"><div style="font-size:30px;color:#ff4050;text-shadow:0 0 20px #f00;margin-bottom:8px">HE'S AT THE DOOR... STAY CALM</div><canvas id="hbc" width="760" height="170"></canvas>
  <div style="font-family:system-ui;font-size:18px;margin-top:8px">Press <b>SPACE</b> or <b>CLICK</b> when the heart hits the circle!</div></div>
+<div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><div id="count"></div>
+ <div id="lobbyHint">WASD walk · <b>hold RIGHT-CLICK + drag</b> to turn the camera · stand on the green <b>START</b> pad to play</div></div>
+<div id="achWin" class="hide"><h2>🏆 ACHIEVEMENTS</h2><div id="achList"></div><button id="achClose">✖ CLOSE</button></div>
+<div id="banner"><img src="achievements-icon.png"><div><div class="a">ACHIEVEMENT UNLOCKED!</div><div class="b" id="bName"></div><div class="c" id="bDesc"></div></div></div>
 <canvas id="scare"></canvas>
 <div id="fade"></div>
 <script src="three.min.js"></script>
@@ -189,7 +207,7 @@ function closetFront(c){return c.pos.clone().add(new THREE.Vector3(Math.sin(c.fa
 function leaveCloset(){if(hb)return;const c=P.hidden||P.trap;P.hidden=null;P.trap=null;$('slats').style.display='none';const fwd=new THREE.Vector3(Math.sin(c.face),0,Math.cos(c.face));P.pos.copy(c.pos).addScaledVector(fwd,5);SFX.door()}
 $('push').onclick=()=>{if(!P.trap)return;audio();P.trap.pushes--;$('pushLeft').textContent=P.trap.pushes;nz(.12,env(.3,.001,.1),'lowpass',400);
  if(P.trap.pushes%10===0)makeNoise(P.trap.pos);   // the banging is LOUD
- if(P.trap.pushes<=0){$('trap').classList.add('hide');leaveCloset();toast('You escaped!');state='play';renderer.domElement.requestPointerLock()}};
+ if(P.trap.pushes<=0){$('trap').classList.add('hide');leaveCloset();toast('You escaped!');earn('closet');state='play';renderer.domElement.requestPointerLock()}};
 // keypad
 let entered='';
 '123456789C0✔'.split('').forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>keyPress(k);$('kgrid').appendChild(b)});
@@ -233,12 +251,12 @@ let doorOpen=false;
 function openDoor(){SFX.good();$('keypad').classList.add('hide');state='play';renderer.domElement.requestPointerLock();doorOpen=true;toast('The door is open... RUN!',3000);
  const s=solids.findIndex(b=>b.m===backDoor);if(s>=0)solids.splice(s,1);SFX.door();backDoor.position.y=21;
  setTimeout(()=>{SFX.slam();setTimeout(()=>{SFX.slam();toast('BOOM!',1500);B.chase=true;B.pos.set(0,0,-185);B.mode='hunt'},700)},1500)}
-function win(){if(P.won)return;P.won=true;state='won';document.exitPointerLock();const f=$('fade');f.textContent='The end...';f.style.opacity=1;f.style.pointerEvents='auto';
- setTimeout(()=>f.textContent='The end...  Or is it?',2500);setTimeout(()=>{f.style.opacity=0;f.style.pointerEvents='none';$('menu').classList.remove('hide');$('menu').querySelector('h2').textContent='[HORROR] — CHAPTER 1 COMPLETE!';state='menu'},6500)}
+function win(){if(P.won)return;P.won=true;state='won';{const secs=(performance.now()-run.start)/1000;if(!run.hunted)earn('silent');if(secs<300)earn('speed');beatChapter(1)}document.exitPointerLock();const f=$('fade');f.textContent='The end...';f.style.opacity=1;f.style.pointerEvents='auto';
+ setTimeout(()=>f.textContent='The end...  Or is it?',2500);setTimeout(()=>{f.style.opacity=0;f.style.pointerEvents='none';goLobby()},6500)}
 // ---------------- dying ----------------
 const sc=$('scare'),sx=sc.getContext('2d');
-function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();SFX.scream();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();
- (function jump(){const k=(performance.now()-t0)/700;if(k>1){sc.style.display='none';$('deadTip').textContent=why;$('dead').classList.remove('hide');return}
+function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths');$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();SFX.scream();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();
+ (function jump(){const k=(performance.now()-t0)/700;if(k>1){sc.style.display='none';if(state==='dead'){$('deadTip').textContent=why;$('dead').classList.remove('hide')}return}
   const W=sc.width,H=sc.height,s=(.4+k*1.6)*Math.min(W,H)/2,cx=W/2+R(-30,30),cy=H/2+R(-30,30);sx.fillStyle='#000';sx.fillRect(0,0,W,H);
   sx.fillStyle='#d81e28';sx.shadowColor='#f00';sx.shadowBlur=60;sx.beginPath();sx.arc(cx-s*.8,cy-s*.85,s*.48,0,7);sx.arc(cx+s*.8,cy-s*.85,s*.48,0,7);sx.fill();sx.beginPath();sx.arc(cx,cy,s,0,7);sx.fill();sx.shadowBlur=0;
   sx.fillStyle='rgba(255,255,255,.25)';sx.beginPath();sx.ellipse(cx-s*.35,cy-s*.45,s*.25,s*.13,-.6,0,7);sx.fill();requestAnimationFrame(jump)})()}
@@ -246,6 +264,71 @@ $('revive').onclick=()=>{$('dead').classList.add('hide');P.dead=false;state='pla
  // revive where you died, but 8OTHY gets sent away so you are not caught again instantly
  B.pos.copy(B.chase?new THREE.Vector3(0,0,-185):randomPoint());if(!B.chase){B.mode='wander';B.target=randomPoint()}renderer.domElement.requestPointerLock()};
 $('restart').onclick=()=>{$('dead').classList.add('hide');startGame()};
+// ---------------- ACHIEVEMENTS (the same 13 as the Roblox game, saved in this browser) ----------------
+const ACH=[
+ {id:'8overse',name:'8OVERSE',desc:'Beat all 6 chapters without dying ONCE',need:6},
+ {id:'ch1',name:'THE WRONG STORE',desc:'Beat Chapter 1'},
+ {id:'ch2',name:'THE PHONE GUY',desc:'Beat Chapter 2 (coming to Chrome soon)'},
+ {id:'ch3',name:'NOT A REAL BABY',desc:'Beat Chapter 3 (coming to Chrome soon)'},
+ {id:'ch4',name:"THE MIMIC'S LAIR",desc:'Beat Chapter 4 (coming to Chrome soon)'},
+ {id:'ch5',name:'ENDLESS DOORS',desc:'Beat Chapter 5 (coming to Chrome soon)'},
+ {id:'ch6',name:'GOING DOWN',desc:'Beat Chapter 6 (coming to Chrome soon)'},
+ {id:'silent',name:'SILENT STEPS',desc:'Beat Chapter 1 without 8OTHY ever hunting you'},
+ {id:'closet',name:'CLOSET KING',desc:'Escape a trap closet (all 50 pushes!)'},
+ {id:'anomaly',name:'ANOMALY EYES',desc:'Get 3 anomalies right with NO wrong guesses (Chapter 2)'},
+ {id:'speed',name:'SPEEDRUNNER',desc:'Beat Chapter 1 in under 5 minutes'},
+ {id:'hungry',name:'NEVER HUNGRY',desc:'Survive all 10 sewer days without your hunger hitting 0 (Chapter 6)'},
+ {id:'deaths',name:'DEATH COLLECTOR',desc:'Die 50 times',need:50}];
+let SAVE;try{SAVE=JSON.parse(localStorage.getItem('cb_save'))}catch(e){}SAVE=Object.assign({earned:{},equipped:null,deaths:0,streak:{},best:0},SAVE||{});
+const saveGame=()=>{try{localStorage.setItem('cb_save',JSON.stringify(SAVE))}catch(e){}};
+const run={start:0,hunted:false};
+let bannerQ=[],bannerOn=false;
+function showBanner(){if(bannerOn||!bannerQ.length)return;const a=bannerQ.shift();bannerOn=true;$('bName').textContent=a.name;$('bDesc').textContent=a.desc.replace(/ \(.*\)$/,'');$('banner').style.top='18px';SFX.good();
+ setTimeout(()=>{$('banner').style.top='-140px';setTimeout(()=>{bannerOn=false;showBanner()},600)},4000)}
+function earn(id){if(SAVE.earned[id])return;SAVE.earned[id]=true;if(!SAVE.equipped)SAVE.equipped=id;saveGame();bannerQ.push(ACH.find(a=>a.id===id));showBanner();drawTitle();drawAch()}
+function beatChapter(n){earn('ch'+n);SAVE.best=Math.max(SAVE.best,n);SAVE.streak[n]=true;saveGame();if(Object.keys(SAVE.streak).length>=6)earn('8overse');drawTitle()}
+function drawAch(){const prog={'8overse':Object.keys(SAVE.streak).length,deaths:SAVE.deaths};
+ $('achList').innerHTML=ACH.map(a=>{const got=SAVE.earned[a.id],p=prog[a.id];return '<div class="ach '+(got?'got':'lock')+'"><img src="achievements-icon.png"><div class="t"><div class="n">'+(got?'':'🔒 ')+a.name+'</div><div class="d">'+a.desc+(!got&&a.need&&p!=null?' ('+p+'/'+a.need+')':'')+'</div></div>'+
+  (got?'<button data-eq="'+a.id+'" class="'+(SAVE.equipped===a.id?'on':'')+'">'+(SAVE.equipped===a.id?'EQUIPPED ✓':'EQUIP')+'</button>':'')+'</div>'}).join('');
+ $('achList').querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{SAVE.equipped=SAVE.equipped===b.dataset.eq?null:b.dataset.eq;saveGame();drawAch();drawTitle()})}
+$('trophy').onclick=()=>{drawAch();$('achWin').classList.remove('hide')};$('achClose').onclick=()=>$('achWin').classList.add('hide');
+// ---------------- THE LOBBY (far away from the store, like the Roblox one at x=400) ----------------
+const L=new THREE.Vector3(400,0,0);
+box(70,1,44,M(0x5a3a2a),L.x,-.5,L.z,false);box(72,1,46,M(0x2a1418),L.x,16.5,L.z,false);
+box(1,16,44,M(0x5a3741),L.x-35.5,8,L.z);box(1,16,44,M(0x5a3741),L.x+35.5,8,L.z);box(72,16,1,M(0x5a3741),L.x,8,L.z-22.5);box(72,16,1,M(0x5a3741),L.x,8,L.z+22.5);
+for(const x of[-20,0,20]){const lamp=new THREE.Mesh(new THREE.BoxGeometry(2,.4,2),new THREE.MeshBasicMaterial({color:0xffc88c}));lamp.position.set(L.x+x,15.6,L.z);scene.add(lamp);const pl=new THREE.PointLight(0xffc88c,1.1,40,1.4);pl.position.set(L.x+x,14,L.z);scene.add(pl)}
+const textSprite=(lines,w=1024,h=256)=>{const cv=document.createElement('canvas');cv.width=w;cv.height=h;const tex=new THREE.CanvasTexture(cv);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));sp.userData={cv,tex,w,h};return sp};
+function paint(sp,lines){const{cv,tex,w,h}=sp.userData,x=cv.getContext('2d');x.clearRect(0,0,w,h);x.textAlign='center';x.lineJoin='round';
+ lines.forEach(([t,size,col,y])=>{x.font='900 '+size+'px Arial Black';x.lineWidth=size*.18;x.strokeStyle='#000';x.strokeText(t,w/2,y);x.fillStyle=col;x.fillText(t,w/2,y)});tex.needsUpdate=true}
+const sign=textSprite();sign.scale.set(34,8.5,1);sign.position.set(L.x,11,L.z-21);scene.add(sign);paint(sign,[['CODEBREAKER',130,'#ff3045',130],['[HORROR]',70,'#ffffff',225]]);
+const startPad=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.4,32),new THREE.MeshBasicMaterial({color:0x3aff6a}));startPad.position.set(L.x,.2,L.z-10);scene.add(startPad);
+const padLabel=textSprite();padLabel.scale.set(12,3,1);padLabel.position.set(L.x,4,L.z-10);scene.add(padLabel);paint(padLabel,[['START',150,'#3aff6a',190]]);
+// you, as a blocky character (only seen in the lobby)
+const me=new THREE.Group();scene.add(me);
+const limb=(w,h,d,c,x,y)=>{const g=new THREE.Group();g.position.set(x,y,0);const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.y=-h/2;g.add(m);me.add(g);return g};
+const torso=new THREE.Mesh(new THREE.BoxGeometry(2,2,1),M(0xff8a2a));torso.position.y=3;me.add(torso);
+const headM=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.2,1.2),M(0xffd23b));headM.position.y=4.6;me.add(headM);
+const face=new THREE.Mesh(new THREE.PlaneGeometry(.8,.5),new THREE.MeshBasicMaterial({color:0x111111}));face.position.set(0,4.6,.61);face.scale.set(.6,.3,1);me.add(face);
+const armL=limb(1,2,1,0xffd23b,-1.5,4),armR=limb(1,2,1,0xffd23b,1.5,4),legL=limb(1,2,1,0x2a5bd8,-.5,2),legR=limb(1,2,1,0x2a5bd8,.5,2);
+const title=textSprite(null,1024,200);title.scale.set(11,2.15,1);me.add(title);title.position.y=7.2;
+function drawTitle(){const a=ACH.find(a=>a.id===SAVE.equipped);const stat='💀 '+SAVE.deaths+' deaths · 📖 Best: '+(SAVE.best?'Chapter '+SAVE.best:'none yet');paint(title,a?[['🏆 '+a.name,80,'#ffd23b',85],[stat,46,'#eeeeee',170]]:[[stat,50,'#eeeeee',120]])}
+const LB={pos:L.clone().add(new THREE.Vector3(0,0,12)),face:Math.PI,camYaw:0,count:0,walk:0};
+function goLobby(){state='lobby';document.exitPointerLock();['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.add('hide');$('slats').style.display='none';$('lobbyUI').classList.remove('hide');
+ LB.pos=L.clone().add(new THREE.Vector3(0,0,12));LB.face=Math.PI;LB.camYaw=0;LB.count=0;$('count').style.display='none';me.visible=true;drawTitle();audio();A.resume();if(A.growl)A.growl.gain.value=0}
+let rDrag=false;renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('mousedown',e=>{if(e.button===2)rDrag=true});addEventListener('mouseup',e=>{if(e.button===2)rDrag=false});
+addEventListener('mousemove',e=>{if(rDrag&&state==='lobby')LB.camYaw-=e.movementX*.006});
+function stepLobby(dt){let mx=0,mz=0;if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(keys.KeyA)mx-=1;if(keys.KeyD)mx+=1;if(keys.ArrowLeft)LB.camYaw+=dt*2;if(keys.ArrowRight)LB.camYaw-=dt*2;
+ const moving=mx||mz;if(moving){const len=Math.hypot(mx,mz),fx=-Math.sin(LB.camYaw),fz=-Math.cos(LB.camYaw),rx=Math.cos(LB.camYaw),rz=-Math.sin(LB.camYaw);
+  const vx=(fx*-mz+rx*mx)/len,vz=(fz*-mz+rz*mx)/len;LB.pos.x+=vx*16*dt;LB.pos.z+=vz*16*dt;LB.face=Math.atan2(vx,vz);LB.walk+=dt*10}
+ LB.pos.x=Math.max(L.x-33,Math.min(L.x+33,LB.pos.x));LB.pos.z=Math.max(L.z-20,Math.min(L.z+20,LB.pos.z));
+ me.position.copy(LB.pos);me.rotation.y=LB.face;const sw=moving?Math.sin(LB.walk)*.7:0;armL.rotation.x=sw;armR.rotation.x=-sw;legL.rotation.x=-sw;legR.rotation.x=sw;
+ // the START pad: stand on it for 3 seconds
+ const onPad=Math.hypot(LB.pos.x-startPad.position.x,LB.pos.z-startPad.position.z)<4;startPad.material.color.setHex(onPad?0xffffff:0x3aff6a);
+ if(onPad){LB.count+=dt;$('count').style.display='block';const n=Math.ceil(3-LB.count);$('count').textContent=n>0?n:'GO!';if(LB.count>=3){$('lobbyUI').classList.add('hide');$('achWin').classList.add('hide');me.visible=false;startGame()}}
+ else{LB.count=0;$('count').style.display='none'}
+ camera.position.set(LB.pos.x+Math.sin(LB.camYaw)*16,LB.pos.y+8,LB.pos.z+Math.cos(LB.camYaw)*16);camera.lookAt(LB.pos.x,LB.pos.y+4,LB.pos.z)}
+$('toLobby').onclick=goLobby;
 // ---------------- start ----------------
 function startGame(){audio();A.resume();if(hb)hbEnd();B.closet=null;rollCode();placeCookies();notes=[];drawNotes();
  if(paperMesh){scene.remove(paperMesh);paperMesh=null}if(!clickables.includes(giga)){scene.add(giga);clickables.push(giga)}
@@ -254,8 +337,8 @@ function startGame(){audio();A.resume();if(hb)hbEnd();B.closet=null;rollCode();p
  Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false});P.vel.set(0,0,0);
  Object.assign(B,{pos:new THREE.Vector3(0,0,-185),target:randomPoint(),mode:'wander',wait:0,chase:false});
  ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
- toast('Find the PINK clue cookies. Stay quiet...',3500);console.log('CODEBREAKER code (for testing): '+CODE)}
-$('play').onclick=startGame;
+ toast('Find the PINK clue cookies. Stay quiet...',3500);run.start=performance.now();run.hunted=false;me.visible=false;$('lobbyUI').classList.add('hide');console.log('CODEBREAKER code (for testing): '+CODE)}
+$('play').onclick=goLobby;
 document.addEventListener('click',e=>{if(e.target.tagName==='BUTTON')setTimeout(()=>e.target.blur(),0)});   // buttons never keep focus, so SPACE can't press them
 // ---------------- the game loop ----------------
 const PR=1.1;   // how fat you are
@@ -264,6 +347,7 @@ function collide(p,crouching){for(const b of solids){if(b.closet&&P.hidden)conti
  if(!crouching)for(const cb of crouchBeams){const bx=cb.position.x;if(Math.abs(p.x-bx)<1.45+PR&&Math.abs(p.z+300)<1+PR){p.z=p.z>-300?-298.9:-301.1}}}   // the crack: crouch to fit
 let last=performance.now(),stepT=0,heartT=0,flickT=0;
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
+ if(state==='lobby'){stepLobby(dt);renderer.render(scene,camera);return}
  if(state==='heartbeat')stepHeartbeat(dt);
  if((state==='play'||state==='keypad'||state==='trap'||state==='heartbeat')&&!P.dead){const canMove=state==='play';
   // moving
@@ -282,7 +366,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
    if(on&&Math.abs(P.pos.z-zp.z)<.8&&P.pos.x>zp.x0&&P.pos.x<zp.x1&&P.pos.y<3)die('ZAPPED! Wait for the zapper to turn off before you pass.')});
   if(P.pos.z<-303)win();
   // 8OTHY
-  if(B.chase){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}
+  if(B.chase){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}else if(B.mode==='hunt')run.hunted=true;
   if(B.wait>0)B.wait-=dt;else{if(!B.target)B.target=randomPoint();const off=new THREE.Vector3(B.target.x-B.pos.x,0,B.target.z-B.pos.z);
    if(off.length()<1.5&&!B.chase&&!B.closet){if(B.mode==='hunt'){B.mode='wander';B.wait=1.5}B.target=randomPoint()}
    else{const speed=B.chase?CHASE:(B.mode==='hunt'?RUN:WALK);off.normalize();B.pos.addScaledVector(off,Math.min(speed*dt,off.length()+speed*dt));bothy.rotation.y=Math.atan2(off.x,off.z)}}
@@ -304,5 +388,5 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  const eye=P.hidden?4.5:(P.crouch?2.6:4.5);camera.position.set(P.pos.x,P.pos.y+eye,P.pos.z);camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
  renderer.render(scene,camera)}
 requestAnimationFrame(loop);
-window.CB={startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
+me.visible=false;window.CB={goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
 </script></body></html>
