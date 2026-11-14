@@ -159,13 +159,14 @@ function stepMinis(dt){for(let i=minis.length-1;i>=0;i--){const mi=minis[i],m=mi
  const toMe=new THREE.Vector3(P.pos.x-m.position.x,0,P.pos.z-m.position.z);m.rotation.y=Math.atan2(toMe.x,toMe.z);
  if(mi.phase==='jump'){const k=Math.min(1,mi.t/.35),target=P.pos.clone().addScaledVector(toMe.clone().normalize(),-1.6);m.position.lerpVectors(mi.from,new THREE.Vector3(target.x,P.pos.y+1.2,target.z),k);m.position.y+=Math.sin(k*Math.PI)*2;
   if(k>=1){mi.phase='slap';mi.t=0;slapPlayer()}}
- else if(mi.phase==='slap'){m.userData.arm.rotation.z=-Math.sin(Math.min(1,mi.t/.15)*Math.PI)*2.2;if(mi.t>.25){mi.phase='fall';mi.t=0}}
+ else if(mi.phase==='slap'){m.userData.arm.rotation.z=-Math.sin(Math.min(1,mi.t/.15)*Math.PI)*2.2;if(mi.t>.25){mi.phase='run';mi.t=0;mi.from=m.position.clone()}}
  else if(mi.phase==='fall'){m.position.y=Math.max(0,m.position.y-dt*18);m.rotation.z=Math.min(Math.PI/2,mi.t*8);if(m.position.y<=0&&!mi.landed){mi.landed=mi.t}if(mi.landed!=null&&mi.t-mi.landed>=1){mi.phase='getup';mi.t=0}}   /* drops down, lies there for 1 second */   // drops to the ground and lies there
  else if(mi.phase==='getup'){m.rotation.z=Math.max(0,Math.PI/2-mi.t*7);if(mi.t>.25){mi.phase='run';mi.t=0;angerBothy()}}   /* gets up... BOOM! */
- else if(mi.phase==='run'){m.position.addScaledVector(toMe.clone().normalize(),-dt*12);m.position.y=Math.abs(Math.sin(mi.t*16))*.4;if(mi.t>2.5){scene.remove(m);minis.splice(i,1)}}}}   // and scurries away
+ else if(mi.phase==='run'){m.position.y=Math.max(0,m.position.y-dt*10);m.position.addScaledVector(toMe.clone().normalize(),-dt*12);m.position.y=Math.abs(Math.sin(mi.t*16))*.4;if(mi.t>2.5){scene.remove(m);minis.splice(i,1)}}}}   // and scurries away
 function slapPlayer(){P.hp=Math.max(0,P.hp-5);drawHp();if(A){nz(.12,env(1,.001,.1),'highpass',1200);nz(.2,env(.5,.001,.15),'lowpass',800)}
  const sl=$('slap');sl.style.background='rgba(255,0,20,.35)';sl.style.opacity=1;P.shake=.4;setTimeout(()=>{sl.style.opacity=0;sl.style.background='rgba(255,0,20,0)'},350);
- if(P.hp<=0)die('A mini 8OTHY slapped all your health away!')}
+ if(P.hp<=0){die('A mini 8OTHY slapped all your health away!');return}
+ P.down=1.6}   /* 0.3s falling, 1s on the floor, 0.3s getting up */
 let angryT=0;
 function angerBothy(){if(B.chase)return;angryT=7;B.closet=null;B.mode='hunt';B.wait=0;B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);SFX.slam();setTimeout(SFX.slam,120);if(A){const o=osc('sine',80,1.6,env(1,.003,1.5));o.frequency.exponentialRampToValueAtTime(25,A.currentTime+1.4)}P.shake=.8;   /* BOOM! */
  const a=$('angry');a.style.opacity=1;setTimeout(()=>a.style.opacity=0,2200);toast('RUN!',1500)}
@@ -429,7 +430,7 @@ function startGame(){audio();A.resume();if(hb)hbEnd();B.closet=null;rollCode();p
  if(paperMesh){scene.remove(paperMesh);paperMesh=null}if(!clickables.includes(giga)){scene.add(giga);clickables.push(giga)}
  closets.forEach(c=>c.trap=false);const pick=[...closets].sort(()=>Math.random()-.5).slice(0,3);pick.forEach(c=>c.trap=true);
  if(!solids.some(b=>b.m===backDoor))solids.push({m:backDoor,x0:-6,x1:6,z0:-202,z1:-201,y1:14});doorOpen=false;backDoor.position.y=7;
- Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false,hp:100,shake:0});drawHp();resetDrawers();P.vel.set(0,0,0);
+ Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false,hp:100,shake:0,down:0});drawHp();resetDrawers();P.vel.set(0,0,0);
  Object.assign(B,{pos:new THREE.Vector3(0,0,-185),target:randomPoint(),mode:'wander',wait:0,chase:false});
  ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
  toast('Find the PINK clue cookies. Stay quiet...',3500);run.start=performance.now();run.hunted=false;me.visible=false;$('lobbyUI').classList.add('hide');console.log('CODEBREAKER code (for testing): '+CODE)}
@@ -446,7 +447,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  if(state==='heartbeat')stepHeartbeat(dt);
  if((state==='play'||state==='keypad'||state==='trap'||state==='heartbeat')&&!P.dead){const canMove=state==='play';
   // moving
-  P.crouch=!!(keys.ShiftLeft||keys.ShiftRight);const sp=P.crouch?7:16;let mx=0,mz=0;if(canMove&&!P.hidden&&!P.trap){if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(keys.KeyA)mx-=1;if(keys.KeyD)mx+=1}
+  P.crouch=!!(keys.ShiftLeft||keys.ShiftRight);const sp=P.crouch?7:16;let mx=0,mz=0;if(canMove&&!P.hidden&&!P.trap&&!(P.down>0)){if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(keys.KeyA)mx-=1;if(keys.KeyD)mx+=1}
   const len=Math.hypot(mx,mz)||1,f=new THREE.Vector3(-Math.sin(P.yaw),0,-Math.cos(P.yaw)),r=new THREE.Vector3(Math.cos(P.yaw),0,-Math.sin(P.yaw));
   const move=f.multiplyScalar(-mz/len*sp).add(r.multiplyScalar(mx/len*sp));if(!P.hidden&&!P.trap){P.pos.x+=move.x*dt;P.pos.z+=move.z*dt}
   if(canMove&&keys.Space&&P.ground&&!P.crouch&&!P.hidden){P.vel.y=14;P.ground=false}P.vel.y-=40*dt;P.pos.y+=P.vel.y*dt;if(P.pos.y<=0){P.pos.y=0;P.vel.y=0;P.ground=true}
@@ -461,6 +462,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
    if(on&&Math.abs(P.pos.z-zp.z)<.8&&P.pos.x>zp.x0&&P.pos.x<zp.x1&&P.pos.y<3)die('ZAPPED! Wait for the zapper to turn off before you pass.')});
   if(P.pos.z<-303)win();
   stepMinis(dt);
+  if(P.down>0){P.down-=dt;if(P.down<=0){P.down=0;angerBothy()}}   /* you got back up... BOOM! */
   if(angryT>0){angryT-=dt;if(!P.hidden){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}}   // ANGERED: he hunts you down for 7 seconds
   // 8OTHY
   if(B.chase){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}else if(B.mode==='hunt')run.hunted=true;
@@ -482,7 +484,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  // flickering lights
  flickT-=dt;if(flickT<=0){flickT=R(.05,.3);LIGHTS.forEach(L=>{if(L.flick){const on=Math.random()>.25;L.pl.intensity=on?L.base:0;L.tube.material.color.setHex(on?0xeaf2ff:0x222228)}})}
  // camera
- const eye=P.hidden?4.5:(P.crouch?2.6:4.5);const sk=(P.shake||0)>0?(P.shake-=dt,P.shake*.6):0;camera.position.set(P.pos.x+R(-sk,sk),P.pos.y+eye+R(-sk,sk),P.pos.z);camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
+ let eye=P.hidden?4.5:(P.crouch?2.6:4.5),roll=0;if(P.down>0){const t=1.6-P.down,k=t<.3?t/.3:(t<1.3?1:1-(t-1.3)/.3);eye=eye+(0.6-eye)*k;roll=k*1.25}const sk=(P.shake||0)>0?(P.shake-=dt,P.shake*.6):0;camera.position.set(P.pos.x+R(-sk,sk),P.pos.y+eye+R(-sk,sk),P.pos.z);camera.rotation.set(P.pitch*(1-Math.min(1,roll)),P.yaw,roll,'YXZ');
  renderer.render(scene,camera)}
 requestAnimationFrame(loop);
 me.visible=false;window.CB={drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
