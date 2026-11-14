@@ -17,6 +17,9 @@ canvas{display:block}
 #toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:rgba(0,0,0,.7);padding:10px 22px;border-radius:10px;font-size:26px;opacity:0;transition:opacity .25s;white-space:nowrap}
 #prompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:6px 14px;border-radius:8px;font-family:system-ui;font-size:20px;display:none}
 #crouch{position:absolute;right:20px;bottom:20px;font-size:20px;opacity:.85}
+#hpWrap{position:absolute;left:18px;bottom:18px;width:300px}#hpWrap b{font-size:18px;color:#ff8a8a}#hpBar{height:18px;background:#2a0a0e;border:2px solid #5a1a20;border-radius:9px;overflow:hidden;margin-top:4px}#hpFill{height:100%;width:100%;background:linear-gradient(90deg,#ff2a40,#ff7a5a);transition:width .25s}
+#slap{position:absolute;inset:0;background:rgba(255,0,20,0);display:flex;align-items:center;justify-content:center;font-size:120px;color:#fff;text-shadow:0 0 30px #f00;opacity:0;transition:opacity .15s}
+#angry{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-size:64px;color:#ff2235;text-shadow:0 0 30px #f00,4px 4px 0 #000;opacity:0;transition:opacity .2s;white-space:nowrap}
 #slats{position:fixed;inset:0;z-index:4;pointer-events:none;display:none;background:repeating-linear-gradient(#000 0 60px,transparent 60px 86px)}
 #heart{position:absolute;inset:0;box-shadow:inset 0 0 160px 40px rgba(255,0,20,0);transition:box-shadow .2s}
 #keypad,#trap{position:fixed;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
@@ -44,7 +47,7 @@ canvas{display:block}
 #scare{position:fixed;inset:0;z-index:30;display:none}
 #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity 1.2s;display:flex;align-items:center;justify-content:center;font-size:60px;color:#ff2235;text-shadow:0 0 30px #f00}
 </style></head><body>
-<div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div></div>
+<div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div><div id="hpWrap"><b>❤️ HEALTH <span id="hpNum">100</span></b><div id="hpBar"><div id="hpFill"></div></div></div><div id="slap">SLAP!</div><div id="angry">8OTHY IS ANGERED!</div></div>
 <div id="slats"></div>
 <div id="menu" class="screen"><h1>CODEBREAKER</h1><h2>[HORROR]</h2><p style="color:#ffd23b;font-family:'Arial Black'">CHAPTER 1: THE WRONG STORE</p>
  <p>You're trapped in the Giga Cookie Store. Find the clue cookies, crack the code and escape.<br><b>8OTHY hunts by SOUND.</b></p>
@@ -129,6 +132,46 @@ function closet(x,z,face){const g=new THREE.Group();g.position.set(x,0,z);g.rota
  const c={g,door,trap:false,pos:new THREE.Vector3(x,0,z),face};door.userData={kind:'closet',c,label:'Hide'};clickables.push(door);closets.push(c);
  const fx=Math.sin(face),fz=Math.cos(face);solids.push({x0:x-2.7,x1:x+2.7,z0:z-3.3,z1:z+3.3,y1:10,closet:c})}
 for(const z of[-35,-65,-135,-165,-195]){closet(-57.5,z,Math.PI/2);closet(57.5,z,-Math.PI/2)}
+// ---------------- DRESSERS: drawers you can open. Some have a MINI 8OTHY inside! ----------------
+const drawers=[],dresserMat=M(0x4a2c1a),drawerMat=M(0x7a4a2a),knobMat=M(0xd8b060);
+function dresser(x,z,face){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=face;scene.add(g);
+ const body=new THREE.Mesh(new THREE.BoxGeometry(6,4.6,3),dresserMat);body.position.set(0,2.3,0);g.add(body);
+ for(let i=0;i<3;i++){const d=new THREE.Group();d.position.set(0,.85+i*1.4,1.35);g.add(d);
+  const front=new THREE.Mesh(new THREE.BoxGeometry(5.4,1.2,.35),drawerMat);d.add(front);const tray=new THREE.Mesh(new THREE.BoxGeometry(5,1,2.6),M(0x3a2214));tray.position.z=-1.3;d.add(tray);
+  const knob=new THREE.Mesh(new THREE.SphereGeometry(.18,8,8),knobMat);knob.position.z=.25;d.add(knob);
+  const dr={g,d,i,open:false,mini:false,face,front};front.userData={kind:'drawer',dr,label:'Open drawer'};clickables.push(front);drawers.push(dr)}
+ solids.push({x0:x-1.8,x1:x+1.8,z0:z-3.2,z1:z+3.2,y1:4.6})}
+for(const z of[-50,-80,-120,-150,-180]){dresser(-59,z,Math.PI/2);dresser(59,z,-Math.PI/2)}
+// mini 8OTHY: a small copy of the big one
+function makeMini(){const m=new THREE.Group();const ball=(r,mat,x,y)=>{const b=new THREE.Mesh(new THREE.SphereGeometry(r,14,12),mat);b.position.set(x,y,0);m.add(b)};
+ ball(.5,MAT.black,-.5,1.4);ball(.5,MAT.black,.5,1.4);for(const lx of[-.7,-.3,.3,.7]){const l=new THREE.Mesh(new THREE.BoxGeometry(.08,1.4,.08),MAT.black);l.position.set(lx,.6,0);m.add(l)}
+ ball(.55,MAT.red,0,2.3);ball(.28,MAT.red,-.5,2.95);ball(.28,MAT.red,.5,2.95);
+ const arm=new THREE.Mesh(new THREE.BoxGeometry(.15,1.1,.15),MAT.black);arm.position.set(.95,1.7,0);arm.geometry.translate(0,-.5,0);m.add(arm);m.userData.arm=arm;return m}
+const minis=[];
+const JUNK=['Empty...','Old receipts.','Just crumbs...','A broken pencil.','Nothing here.','Dusty napkins.','An old cookie wrapper.'];
+function openDrawer(dr){if(dr.open)return;dr.open=true;SFX.door();const front=dr.front;clickables.splice(clickables.indexOf(front),1);
+ const t0=performance.now();(function slide(){const k=Math.min(1,(performance.now()-t0)/250);dr.d.position.z=1.35+k*1.8;if(k<1)requestAnimationFrame(slide)})();
+ if(!dr.mini){toast(JUNK[RI(0,JUNK.length-1)]);return}
+ // SURPRISE: a mini 8OTHY!
+ const m=makeMini();const wp=new THREE.Vector3();dr.d.getWorldPosition(wp);m.position.copy(wp);m.position.y-=.5;scene.add(m);
+ minis.push({m,t:0,phase:'jump',from:wp.clone(),dr});SFX.scream()}
+function stepMinis(dt){for(let i=minis.length-1;i>=0;i--){const mi=minis[i],m=mi.m;mi.t+=dt;
+ const toMe=new THREE.Vector3(P.pos.x-m.position.x,0,P.pos.z-m.position.z);m.rotation.y=Math.atan2(toMe.x,toMe.z);
+ if(mi.phase==='jump'){const k=Math.min(1,mi.t/.35),target=P.pos.clone().addScaledVector(toMe.clone().normalize(),-1.6);m.position.lerpVectors(mi.from,new THREE.Vector3(target.x,P.pos.y+1.2,target.z),k);m.position.y+=Math.sin(k*Math.PI)*2;
+  if(k>=1){mi.phase='slap';mi.t=0;slapPlayer()}}
+ else if(mi.phase==='slap'){m.userData.arm.rotation.z=-Math.sin(Math.min(1,mi.t/.15)*Math.PI)*2.2;if(mi.t>.25){mi.phase='fall';mi.t=0}}
+ else if(mi.phase==='fall'){m.position.y=Math.max(0,m.position.y-dt*14);m.rotation.z=Math.min(Math.PI/2,mi.t*6);if(mi.t>1.3){mi.phase='getup';mi.t=0}}   // drops to the ground and lies there
+ else if(mi.phase==='getup'){m.rotation.z=Math.max(0,Math.PI/2-mi.t*4);m.position.y=Math.abs(Math.sin(mi.t*12))*.3;if(mi.t>.6){mi.phase='run';mi.t=0;angerBothy()}}
+ else if(mi.phase==='run'){m.position.addScaledVector(toMe.clone().normalize(),-dt*12);m.position.y=Math.abs(Math.sin(mi.t*16))*.4;if(mi.t>2.5){scene.remove(m);minis.splice(i,1)}}}}   // and scurries away
+function slapPlayer(){P.hp=Math.max(0,P.hp-5);drawHp();if(A){nz(.12,env(1,.001,.1),'highpass',1200);nz(.2,env(.5,.001,.15),'lowpass',800)}
+ const sl=$('slap');sl.style.background='rgba(255,0,20,.35)';sl.style.opacity=1;P.shake=.4;setTimeout(()=>{sl.style.opacity=0;sl.style.background='rgba(255,0,20,0)'},350);
+ if(P.hp<=0)die('A mini 8OTHY slapped all your health away!')}
+let angryT=0;
+function angerBothy(){if(B.chase)return;angryT=7;B.closet=null;B.mode='hunt';B.wait=0;B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);SFX.slam();
+ const a=$('angry');a.style.opacity=1;setTimeout(()=>a.style.opacity=0,2200);toast('RUN!',1500)}
+function drawHp(){$('hpNum').textContent=P.hp;$('hpFill').style.width=P.hp+'%'}
+function resetDrawers(){drawers.forEach(dr=>{dr.open=false;dr.d.position.z=1.35;if(!clickables.includes(dr.front))clickables.push(dr.front);dr.mini=false});
+ [...drawers].sort(()=>Math.random()-.5).slice(0,6).forEach(dr=>dr.mini=true);minis.forEach(mi=>scene.remove(mi.m));minis.length=0;angryT=0}
 // ---------------- BACK DOOR + KEYPAD ----------------
 const backDoor=box(12,14,1,MAT.door,0,7,-201.5);
 const kp=new THREE.Mesh(new THREE.BoxGeometry(2,3,.4),M(0x1c1c22));kp.position.set(8.5,6,-201);scene.add(kp);
@@ -196,7 +239,8 @@ function interact(){if(state!=='play')return;audio();
   scene.remove(giga);clickables.splice(clickables.indexOf(giga),1);paperMesh=new THREE.Mesh(new THREE.PlaneGeometry(3,2),new THREE.MeshBasicMaterial({map:paperTexture(lines)}));paperMesh.rotation.x=-Math.PI/2;paperMesh.position.set(-31,3.85,-100);scene.add(paperMesh);
   toast('The GIGA cookie had a paper inside!',3000);makeNoise(giga.position)}
  else if(u.kind==='closet')enterCloset(u.c);
- else if(u.kind==='keypad')openKeypad()}
+ else if(u.kind==='keypad')openKeypad();
+ else if(u.kind==='drawer')openDrawer(u.dr)}
 // closets
 function enterCloset(c){P.savePos=P.pos.clone();const fwd=new THREE.Vector3(Math.sin(c.face),0,Math.cos(c.face));P.pos.copy(c.pos).addScaledVector(fwd,.2);P.yaw=c.face+Math.PI;P.pitch=0;SFX.door();
  if(c.trap){P.trap=c;c.pushes=50;$('pushLeft').textContent=50;$('trap').classList.remove('hide');document.exitPointerLock();state='trap';toast("IT'S A TRAP! Click PUSH 50 times!",3000)}
@@ -289,7 +333,7 @@ function jumpscareSound(){if(!A)return;const t=A.currentTime;
  setTimeout(()=>{if(!A)return;const t2=A.currentTime,s2=A.createBufferSource();s2.buffer=A.noise;const f2=A.createBiquadFilter();f2.type='bandpass';f2.Q.value=2;f2.frequency.setValueAtTime(300,t2);f2.frequency.exponentialRampToValueAtTime(5000,t2+.5);
   const g2=A.createGain();g2.gain.setValueAtTime(.05,t2);g2.gain.exponentialRampToValueAtTime(.7,t2+.5);g2.gain.setValueAtTime(0,t2+.55);s2.connect(f2);f2.connect(g2);g2.connect(master);s2.start(t2);s2.stop(t2+.6)},2000);   // SUCK
  setTimeout(()=>{SFX.slam();SFX.scream()},2550)}                                                                                                   // CHOMP
-$('revive').onclick=()=>{$('dead').classList.add('hide');P.dead=false;state='play';P.hidden=null;P.trap=null;$('slats').style.display='none';
+$('revive').onclick=()=>{$('dead').classList.add('hide');P.dead=false;state='play';P.hp=100;drawHp();angryT=0;minis.forEach(mi=>scene.remove(mi.m));minis.length=0;P.hidden=null;P.trap=null;$('slats').style.display='none';
  // revive where you died, but 8OTHY gets sent away so you are not caught again instantly
  B.pos.copy(B.chase?new THREE.Vector3(0,0,-185):randomPoint());if(!B.chase){B.mode='wander';B.target=randomPoint()}renderer.domElement.requestPointerLock()};
 $('restart').onclick=()=>{$('dead').classList.add('hide');startGame()};
@@ -385,7 +429,7 @@ function startGame(){audio();A.resume();if(hb)hbEnd();B.closet=null;rollCode();p
  if(paperMesh){scene.remove(paperMesh);paperMesh=null}if(!clickables.includes(giga)){scene.add(giga);clickables.push(giga)}
  closets.forEach(c=>c.trap=false);const pick=[...closets].sort(()=>Math.random()-.5).slice(0,3);pick.forEach(c=>c.trap=true);
  if(!solids.some(b=>b.m===backDoor))solids.push({m:backDoor,x0:-6,x1:6,z0:-202,z1:-201,y1:14});doorOpen=false;backDoor.position.y=7;
- Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false});P.vel.set(0,0,0);
+ Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false,hp:100,shake:0});drawHp();resetDrawers();P.vel.set(0,0,0);
  Object.assign(B,{pos:new THREE.Vector3(0,0,-185),target:randomPoint(),mode:'wander',wait:0,chase:false});
  ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
  toast('Find the PINK clue cookies. Stay quiet...',3500);run.start=performance.now();run.hunted=false;me.visible=false;$('lobbyUI').classList.add('hide');console.log('CODEBREAKER code (for testing): '+CODE)}
@@ -416,11 +460,13 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
   zappers.forEach(zp=>{const on=Math.sin(now/1000*2.2+zp.phase)>0;zp.bar.material.color.setHex(on?0x99e6ff:0x223344);zp.pl.intensity=on?1.4:.1;
    if(on&&Math.abs(P.pos.z-zp.z)<.8&&P.pos.x>zp.x0&&P.pos.x<zp.x1&&P.pos.y<3)die('ZAPPED! Wait for the zapper to turn off before you pass.')});
   if(P.pos.z<-303)win();
+  stepMinis(dt);
+  if(angryT>0){angryT-=dt;if(!P.hidden){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}}   // ANGERED: he hunts you down for 7 seconds
   // 8OTHY
   if(B.chase){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}else if(B.mode==='hunt')run.hunted=true;
   if(B.wait>0)B.wait-=dt;else{if(!B.target)B.target=randomPoint();const off=new THREE.Vector3(B.target.x-B.pos.x,0,B.target.z-B.pos.z);
    if(off.length()<1.5&&!B.chase&&!B.closet){if(B.mode==='hunt'){B.mode='wander';B.wait=1.5}B.target=randomPoint()}
-   else{const speed=B.chase?CHASE:(B.mode==='hunt'?RUN:WALK);off.normalize();B.pos.addScaledVector(off,Math.min(speed*dt,off.length()+speed*dt));bothy.rotation.y=Math.atan2(off.x,off.z)}}
+   else{const speed=B.chase?CHASE:(angryT>0?RUN*1.25:(B.mode==='hunt'?RUN:WALK));off.normalize();B.pos.addScaledVector(off,Math.min(speed*dt,off.length()+speed*dt));bothy.rotation.y=Math.atan2(off.x,off.z)}}
   if(B.pos.z<-198&&!doorOpen)B.pos.z=-198;if(!B.chase&&B.pos.z<-198)B.pos.z=-198;
   bothy.position.copy(B.pos);bothy.position.y=Math.abs(Math.sin(now/120))*.25*(B.mode==='hunt'?1:.4);
   if(state==='play'&&P.hidden&&B.closet===P.hidden&&B.pos.distanceTo(closetFront(P.hidden))<2.5)startHeartbeat(P.hidden);
@@ -436,8 +482,8 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  // flickering lights
  flickT-=dt;if(flickT<=0){flickT=R(.05,.3);LIGHTS.forEach(L=>{if(L.flick){const on=Math.random()>.25;L.pl.intensity=on?L.base:0;L.tube.material.color.setHex(on?0xeaf2ff:0x222228)}})}
  // camera
- const eye=P.hidden?4.5:(P.crouch?2.6:4.5);camera.position.set(P.pos.x,P.pos.y+eye,P.pos.z);camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
+ const eye=P.hidden?4.5:(P.crouch?2.6:4.5);const sk=(P.shake||0)>0?(P.shake-=dt,P.shake*.6):0;camera.position.set(P.pos.x+R(-sk,sk),P.pos.y+eye+R(-sk,sk),P.pos.z);camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
  renderer.render(scene,camera)}
 requestAnimationFrame(loop);
-me.visible=false;window.CB={goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
+me.visible=false;window.CB={drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
 </script></body></html>
