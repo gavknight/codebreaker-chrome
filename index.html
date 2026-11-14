@@ -159,7 +159,7 @@ const SFX={step:v=>A&&nz(.07,env(.12*v,.002,.06),'lowpass',500),beep:()=>A&&osc(
  scream:()=>{if(!A)return;const g=env(.7,.01,1.1),f=A.createBiquadFilter();f.type='bandpass';f.frequency.value=1100;f.Q.value=3;f.connect(g);const o=osc('sawtooth',620,1.2,f);o.frequency.exponentialRampToValueAtTime(300,A.currentTime+1.1);nz(1,env(.4,.005,.9),'highpass',2500)},
  zap:()=>A&&nz(.15,env(.3,.001,.12),'highpass',3000),door:()=>{if(!A)return;nz(1.2,env(.4,.05,1.1),'lowpass',300)}};
 // ---------------- input ----------------
-addEventListener('keydown',e=>{keys[e.code]=true;if(state==='heartbeat'&&(e.code==='Space'||e.code==='Enter')&&!e.repeat){hbPress();return}if(e.code==='KeyE')interact();if(e.code==='Escape'&&state==='keypad')closeKeypad()});
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}if(state==='heartbeat'&&(e.code==='Space'||e.code==='Enter')&&!e.repeat){hbPress();return}if(e.code==='KeyE')interact();if(e.code==='Escape'&&state==='keypad')closeKeypad()});
 addEventListener('keyup',e=>keys[e.code]=false);
 renderer.domElement.addEventListener('click',()=>{if(state==='heartbeat'){hbPress();return}if(state==='play'&&!locked)renderer.domElement.requestPointerLock();else if(locked)interact()});
 $('hbc').addEventListener('click',()=>hbPress());
@@ -203,16 +203,16 @@ addEventListener('keydown',e=>{if(state==='keypad'&&/^Digit[0-9]$/.test(e.code))
 const HB={need:8,lives:3};let hb=null;const hbc=$('hbc'),hx=hbc.getContext('2d');
 function startHeartbeat(c){if(hb)return;state='heartbeat';hb={c,hits:0,misses:0,hearts:[],next:.8,gap:.9,t:0,knock:0,flash:0,msg:''};$('hb').classList.remove('hide');B.wait=999;
  B.pos.copy(closetFront(c));bothy.rotation.y=c.face+Math.PI;toast('KNOCK... KNOCK...',2000)}
-function hbPress(){if(!hb)return;const TARGET=140,WIN=34;const h=hb.hearts.find(h=>!h.done&&Math.abs(h.x-TARGET)<WIN);
- if(h){h.done='hit';hb.hits++;SFX.heart(.9);hb.msg='GOOD';hb.flash=.25}else hbMiss('TOO EARLY')}
+function hbPress(){if(!hb)return;const TARGET=140,WIN=46;if(hb.lock>0)return;const h=hb.hearts.find(h=>!h.done&&Math.abs(h.x-TARGET)<WIN);
+ if(h){h.done='hit';hb.hits++;SFX.heart(.9);hb.msg='GOOD';hb.flash=.25}else{hb.msg='WAIT FOR IT...';hb.lock=.5}}   /* pressing early costs NO life, it just makes you wait a moment */
 function hbMiss(why){hb.misses++;hb.msg=why;hb.flash=-.35;SFX.bad();knockSound(1.6)}
 function knockSound(v=1){if(!A)return;nz(.12,env(.6*v,.001,.1),'lowpass',260);const o=osc('square',90,.12,env(.4*v,.001,.1));o.frequency.exponentialRampToValueAtTime(40,A.currentTime+.1)}
-function stepHeartbeat(dt){if(!hb)return;const SPEED=420,TARGET=140,WIN=34;hb.t+=dt;
+function stepHeartbeat(dt){if(!hb)return;const SPEED=380,TARGET=140,WIN=46;hb.t+=dt;hb.lock=Math.max(0,(hb.lock||0)-dt);
  // he keeps knocking, and the door shakes
  hb.knock-=dt;if(hb.knock<=0){hb.knock=R(.45,.8);knockSound();hb.c.door.position.x=R(-.15,.15)}else hb.c.door.position.x*=.8;
  // hearts slide in from the right, and get closer together as you go
  hb.next-=dt;if(hb.next<=0&&hb.hearts.filter(h=>!h.done).length<3&&hb.hits+hb.hearts.filter(h=>!h.done).length<HB.need){hb.hearts.push({x:760});hb.gap=Math.max(.5,hb.gap*.94);hb.next=hb.gap*R(.85,1.25)}
- hb.hearts.forEach(h=>{h.x-=SPEED*dt;if(!h.done&&h.x<TARGET-WIN){h.done='miss';hbMiss('MISSED!')}});
+ hb.hearts.forEach(h=>{h.x-=SPEED*dt;if(!h.done&&h.x<TARGET-WIN-6){h.done='miss';hbMiss('MISSED!')}});
  if(hb.misses>=HB.lives)return hbFail();
  if(hb.hits>=HB.need)return hbWin();
  // draw it
@@ -256,6 +256,7 @@ function startGame(){audio();A.resume();if(hb)hbEnd();B.closet=null;rollCode();p
  ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
  toast('Find the PINK clue cookies. Stay quiet...',3500);console.log('CODEBREAKER code (for testing): '+CODE)}
 $('play').onclick=startGame;
+document.addEventListener('click',e=>{if(e.target.tagName==='BUTTON')setTimeout(()=>e.target.blur(),0)});   // buttons never keep focus, so SPACE can't press them
 // ---------------- the game loop ----------------
 const PR=1.1;   // how fat you are
 function collide(p,crouching){for(const b of solids){if(b.closet&&P.hidden)continue;if(p.x>b.x0-PR&&p.x<b.x1+PR&&p.z>b.z0-PR&&p.z<b.z1+PR&&p.y<b.y1-.3){
