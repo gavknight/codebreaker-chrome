@@ -255,11 +255,40 @@ function win(){if(P.won)return;P.won=true;state='won';{const secs=(performance.n
  setTimeout(()=>f.textContent='The end...  Or is it?',2500);setTimeout(()=>{f.style.opacity=0;f.style.pointerEvents='none';goLobby()},6500)}
 // ---------------- dying ----------------
 const sc=$('scare'),sx=sc.getContext('2d');
-function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths');$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();SFX.scream();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();
- (function jump(){const k=(performance.now()-t0)/700;if(k>1){sc.style.display='none';if(state==='dead'){$('deadTip').textContent=why;$('dead').classList.remove('hide')}return}
-  const W=sc.width,H=sc.height,s=(.4+k*1.6)*Math.min(W,H)/2,cx=W/2+R(-30,30),cy=H/2+R(-30,30);sx.fillStyle='#000';sx.fillRect(0,0,W,H);
-  sx.fillStyle='#d81e28';sx.shadowColor='#f00';sx.shadowBlur=60;sx.beginPath();sx.arc(cx-s*.8,cy-s*.85,s*.48,0,7);sx.arc(cx+s*.8,cy-s*.85,s*.48,0,7);sx.fill();sx.beginPath();sx.arc(cx,cy,s,0,7);sx.fill();sx.shadowBlur=0;
-  sx.fillStyle='rgba(255,255,255,.25)';sx.beginPath();sx.ellipse(cx-s*.35,cy-s*.45,s*.25,s*.13,-.6,0,7);sx.fill();requestAnimationFrame(jump)})()}
+function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths');$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();jumpscareSound();
+ /* Gavin's jumpscare: 8OTHY's head fills the screen, it opens into a GIANT round mouth over 2 seconds, then he PULLS YOU IN */
+ (function jump(){const tt=(performance.now()-t0)/1000,W=sc.width,H=sc.height,base=Math.min(W,H)*.42;
+  if(tt>2.75){sc.style.display='none';if(state==='dead'){$('deadTip').textContent=why;$('dead').classList.remove('hide')}return}
+  const open=clampN(tt/2,0,1),pull=clampN((tt-2)/.55,0,1),shake=6+open*22,cx=W/2+R(-shake,shake),cy=H/2+R(-shake,shake);
+  const grow=1+pull*pull*9,s=base*(1+open*.25)*grow;                        // the pull: zoom into the mouth
+  sx.fillStyle='#000';sx.fillRect(0,0,W,H);
+  // head + ear bumps
+  const hg=sx.createRadialGradient(cx-s*.35,cy-s*.4,s*.1,cx,cy,s*1.05);hg.addColorStop(0,'#ff4a55');hg.addColorStop(.5,'#c8121e');hg.addColorStop(1,'#4a0006');
+  sx.fillStyle=hg;sx.shadowColor='#f00';sx.shadowBlur=60;sx.beginPath();sx.arc(cx-s*.8,cy-s*.85,s*.48,0,7);sx.arc(cx+s*.8,cy-s*.85,s*.48,0,7);sx.fill();sx.beginPath();sx.arc(cx,cy,s,0,7);sx.fill();sx.shadowBlur=0;
+  sx.fillStyle='#5a0610';sx.beginPath();sx.arc(cx-s*.8,cy-s*.85,s*.24,0,7);sx.arc(cx+s*.8,cy-s*.85,s*.24,0,7);sx.fill();
+  if(open<.05){sx.fillStyle='rgba(255,255,255,.3)';sx.beginPath();sx.ellipse(cx-s*.35,cy-s*.45,s*.25,s*.13,-.6,0,7);sx.fill()}
+  // the mouth: a crack that tears open into a perfect black circle
+  const mr=s*.88*easeN(open),wob=1+Math.sin(tt*40)*.02*(1-pull);
+  if(mr>2){sx.fillStyle='#7a0612';sx.beginPath();sx.arc(cx,cy,mr*1.08*wob,0,7);sx.fill();                                 // gums
+   const mg=sx.createRadialGradient(cx,cy,0,cx,cy,mr);mg.addColorStop(0,'#000');mg.addColorStop(.75,'#050000');mg.addColorStop(1,'#2a0004');sx.fillStyle=mg;sx.beginPath();sx.arc(cx,cy,mr,0,7);sx.fill();
+   // rings of teeth pointing in, spinning slowly — like a drain
+   for(let ring=0;ring<3;ring++){const rr=mr*(1-ring*.22),n=26-ring*5,len=mr*(.16-ring*.03),spin=tt*(ring%2?-.6:.6);
+    sx.fillStyle=ring?'#e6d8b8':'#fff7e6';for(let i=0;i<n;i++){const an=i/n*Math.PI*2+spin,w=Math.PI/n*.8;sx.beginPath();sx.moveTo(cx+Math.cos(an-w)*rr,cy+Math.sin(an-w)*rr);sx.lineTo(cx+Math.cos(an)*(rr-len),cy+Math.sin(an)*(rr-len));sx.lineTo(cx+Math.cos(an+w)*rr,cy+Math.sin(an+w)*rr);sx.fill()}}
+   sx.fillStyle='rgba(120,10,20,'+(.5*open)+')';sx.beginPath();sx.ellipse(cx,cy+mr*.25,mr*.35,mr*.15,0,0,7);sx.fill()}   // tongue deep inside
+  // speed lines while you get pulled in
+  if(pull>0){sx.strokeStyle='rgba(255,255,255,'+(.35*pull)+')';sx.lineWidth=3;for(let i=0;i<40;i++){const an=i/40*Math.PI*2,r0=Math.max(W,H)*.75,r1=r0*(1-pull*.6);sx.beginPath();sx.moveTo(W/2+Math.cos(an)*r0,H/2+Math.sin(an)*r0);sx.lineTo(W/2+Math.cos(an)*r1,H/2+Math.sin(an)*r1);sx.stroke()}}
+  if(pull>.85){sx.fillStyle='rgba(0,0,0,'+((pull-.85)/.15)+')';sx.fillRect(0,0,W,H)}
+  requestAnimationFrame(jump)})()}
+const clampN=(v,a,b)=>Math.max(a,Math.min(b,v)),easeN=q=>q<.5?2*q*q:1-Math.pow(-2*q+2,2)/2;
+// the sound: a growl that rises for 2 seconds as the mouth opens, a big SUCK, then CHOMP
+function jumpscareSound(){if(!A)return;const t=A.currentTime;
+ const g=A.createGain();g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.6,t+2);g.gain.setValueAtTime(0,t+2.05);g.connect(master);
+ const f=A.createBiquadFilter();f.type='bandpass';f.Q.value=3;f.frequency.setValueAtTime(250,t);f.frequency.exponentialRampToValueAtTime(900,t+2);f.connect(g);
+ const o=A.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(55,t);o.frequency.exponentialRampToValueAtTime(140,t+2);o.connect(f);o.start(t);o.stop(t+2.1);
+ const lfo=A.createOscillator(),lg=A.createGain();lfo.frequency.value=9;lg.gain.value=18;lfo.connect(lg);lg.connect(o.frequency);lfo.start(t);lfo.stop(t+2.1);
+ setTimeout(()=>{if(!A)return;const t2=A.currentTime,s2=A.createBufferSource();s2.buffer=A.noise;const f2=A.createBiquadFilter();f2.type='bandpass';f2.Q.value=2;f2.frequency.setValueAtTime(300,t2);f2.frequency.exponentialRampToValueAtTime(5000,t2+.5);
+  const g2=A.createGain();g2.gain.setValueAtTime(.05,t2);g2.gain.exponentialRampToValueAtTime(.7,t2+.5);g2.gain.setValueAtTime(0,t2+.55);s2.connect(f2);f2.connect(g2);g2.connect(master);s2.start(t2);s2.stop(t2+.6)},2000);   // SUCK
+ setTimeout(()=>{SFX.slam();SFX.scream()},2550)}                                                                                                   // CHOMP
 $('revive').onclick=()=>{$('dead').classList.add('hide');P.dead=false;state='play';P.hidden=null;P.trap=null;$('slats').style.display='none';
  // revive where you died, but 8OTHY gets sent away so you are not caught again instantly
  B.pos.copy(B.chase?new THREE.Vector3(0,0,-185):randomPoint());if(!B.chase){B.mode='wander';B.target=randomPoint()}renderer.domElement.requestPointerLock()};
