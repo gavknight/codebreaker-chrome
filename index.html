@@ -47,7 +47,7 @@ canvas{display:block}
 #scare{position:fixed;inset:0;z-index:30;display:none}
 #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity 1.2s;display:flex;align-items:center;justify-content:center;font-size:60px;color:#ff2235;text-shadow:0 0 30px #f00}
 </style></head><body>
-<div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div><div id="hpWrap"><b>❤️ HEALTH <span id="hpNum">100</span></b><div id="hpBar"><div id="hpFill"></div></div></div><div id="slap">SLAP!</div><div id="angry">8OTHY IS ANGERED!</div></div>
+<div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div><div id="hpWrap"><b>❤️ HEALTH <span id="hpNum">100</span></b><div id="hpBar"><div id="hpFill"></div></div></div><div id="slap">SLAP!</div><div id="angry">BOOM! 8OTHY ANGERED!</div></div>
 <div id="slats"></div>
 <div id="menu" class="screen"><h1>CODEBREAKER</h1><h2>[HORROR]</h2><p style="color:#ffd23b;font-family:'Arial Black'">CHAPTER 1: THE WRONG STORE</p>
  <p>You're trapped in the Giga Cookie Store. Find the clue cookies, crack the code and escape.<br><b>8OTHY hunts by SOUND.</b></p>
@@ -160,14 +160,14 @@ function stepMinis(dt){for(let i=minis.length-1;i>=0;i--){const mi=minis[i],m=mi
  if(mi.phase==='jump'){const k=Math.min(1,mi.t/.35),target=P.pos.clone().addScaledVector(toMe.clone().normalize(),-1.6);m.position.lerpVectors(mi.from,new THREE.Vector3(target.x,P.pos.y+1.2,target.z),k);m.position.y+=Math.sin(k*Math.PI)*2;
   if(k>=1){mi.phase='slap';mi.t=0;slapPlayer()}}
  else if(mi.phase==='slap'){m.userData.arm.rotation.z=-Math.sin(Math.min(1,mi.t/.15)*Math.PI)*2.2;if(mi.t>.25){mi.phase='fall';mi.t=0}}
- else if(mi.phase==='fall'){m.position.y=Math.max(0,m.position.y-dt*14);m.rotation.z=Math.min(Math.PI/2,mi.t*6);if(mi.t>1.3){mi.phase='getup';mi.t=0}}   // drops to the ground and lies there
- else if(mi.phase==='getup'){m.rotation.z=Math.max(0,Math.PI/2-mi.t*4);m.position.y=Math.abs(Math.sin(mi.t*12))*.3;if(mi.t>.6){mi.phase='run';mi.t=0;angerBothy()}}
+ else if(mi.phase==='fall'){m.position.y=Math.max(0,m.position.y-dt*18);m.rotation.z=Math.min(Math.PI/2,mi.t*8);if(m.position.y<=0&&!mi.landed){mi.landed=mi.t}if(mi.landed!=null&&mi.t-mi.landed>=1){mi.phase='getup';mi.t=0}}   /* drops down, lies there for 1 second */   // drops to the ground and lies there
+ else if(mi.phase==='getup'){m.rotation.z=Math.max(0,Math.PI/2-mi.t*7);if(mi.t>.25){mi.phase='run';mi.t=0;angerBothy()}}   /* gets up... BOOM! */
  else if(mi.phase==='run'){m.position.addScaledVector(toMe.clone().normalize(),-dt*12);m.position.y=Math.abs(Math.sin(mi.t*16))*.4;if(mi.t>2.5){scene.remove(m);minis.splice(i,1)}}}}   // and scurries away
 function slapPlayer(){P.hp=Math.max(0,P.hp-5);drawHp();if(A){nz(.12,env(1,.001,.1),'highpass',1200);nz(.2,env(.5,.001,.15),'lowpass',800)}
  const sl=$('slap');sl.style.background='rgba(255,0,20,.35)';sl.style.opacity=1;P.shake=.4;setTimeout(()=>{sl.style.opacity=0;sl.style.background='rgba(255,0,20,0)'},350);
  if(P.hp<=0)die('A mini 8OTHY slapped all your health away!')}
 let angryT=0;
-function angerBothy(){if(B.chase)return;angryT=7;B.closet=null;B.mode='hunt';B.wait=0;B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);SFX.slam();
+function angerBothy(){if(B.chase)return;angryT=7;B.closet=null;B.mode='hunt';B.wait=0;B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);SFX.slam();setTimeout(SFX.slam,120);if(A){const o=osc('sine',80,1.6,env(1,.003,1.5));o.frequency.exponentialRampToValueAtTime(25,A.currentTime+1.4)}P.shake=.8;   /* BOOM! */
  const a=$('angry');a.style.opacity=1;setTimeout(()=>a.style.opacity=0,2200);toast('RUN!',1500)}
 function drawHp(){$('hpNum').textContent=P.hp;$('hpFill').style.width=P.hp+'%'}
 function resetDrawers(){drawers.forEach(dr=>{dr.open=false;dr.d.position.z=1.35;if(!clickables.includes(dr.front))clickables.push(dr.front);dr.mini=false});
