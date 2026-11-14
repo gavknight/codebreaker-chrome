@@ -1,0 +1,268 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CODEBREAKER [HORROR]</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:'Arial Black',Impact,system-ui,sans-serif;color:#fff;user-select:none}
+canvas{display:block}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(circle at 50% 40%,#2a0408,#000 70%);z-index:20;text-align:center}
+.screen h1{margin:0;font-size:min(13vw,130px);letter-spacing:6px;color:#ff2235;text-shadow:0 0 30px #ff0018,4px 4px 0 #3a0004}
+.screen h2{margin:0;font-size:min(7vw,60px);color:#fff}
+.screen p{margin:0;font-family:system-ui;opacity:.75;max-width:640px;line-height:1.5}
+.btn{font:inherit;font-size:28px;padding:12px 44px;border-radius:12px;border:3px solid #ff2235;background:#1a0004;color:#ff6070;cursor:pointer}
+.btn:hover{background:#3a0008}
+.hide{display:none!important}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+#dot{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 4px #000}
+#notes{position:absolute;left:18px;top:18px;background:rgba(20,8,10,.75);border:2px solid #5a1a20;border-radius:10px;padding:10px 14px;min-width:200px;font-family:system-ui;font-size:20px}
+#notes b{display:block;font-family:'Arial Black';color:#ff8a8a;font-size:18px;margin-bottom:4px}
+#toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:rgba(0,0,0,.7);padding:10px 22px;border-radius:10px;font-size:26px;opacity:0;transition:opacity .25s;white-space:nowrap}
+#prompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);background:rgba(0,0,0,.6);padding:6px 14px;border-radius:8px;font-family:system-ui;font-size:20px;display:none}
+#crouch{position:absolute;right:20px;bottom:20px;font-size:20px;opacity:.85}
+#slats{position:fixed;inset:0;z-index:4;pointer-events:none;display:none;background:repeating-linear-gradient(#000 0 60px,transparent 60px 86px)}
+#heart{position:absolute;inset:0;box-shadow:inset 0 0 160px 40px rgba(255,0,20,0);transition:box-shadow .2s}
+#keypad,#trap{position:fixed;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)}
+.panel{background:#1c1c22;border:4px solid #4a4a56;border-radius:16px;padding:22px;text-align:center}
+#kdisp{background:#061a0a;color:#3aff6a;font:900 54px Consolas,monospace;padding:10px 20px;margin-bottom:14px;border-radius:8px;letter-spacing:12px;min-width:260px;text-shadow:0 0 12px #3aff6a}
+#kgrid{display:grid;grid-template-columns:repeat(3,90px);gap:10px}
+#kgrid button{font:900 34px 'Arial Black';height:76px;border-radius:10px;border:0;background:#2c2c34;color:#ddd;cursor:pointer}
+#kgrid button:hover{background:#3c3c48}
+#push{font:900 44px 'Arial Black';padding:22px 60px;border-radius:16px;border:4px solid #fff;background:#c81020;color:#fff;cursor:pointer}
+#scare{position:fixed;inset:0;z-index:30;display:none}
+#fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity 1.2s;display:flex;align-items:center;justify-content:center;font-size:60px;color:#ff2235;text-shadow:0 0 30px #f00}
+</style></head><body>
+<div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div></div>
+<div id="slats"></div>
+<div id="menu" class="screen"><h1>CODEBREAKER</h1><h2>[HORROR]</h2><p style="color:#ffd23b;font-family:'Arial Black'">CHAPTER 1: THE WRONG STORE</p>
+ <p>You're trapped in the Giga Cookie Store. Find the clue cookies, crack the code and escape.<br><b>8OTHY hunts by SOUND.</b></p>
+ <button class="btn" id="play">▶ PLAY</button>
+ <p style="font-size:15px">WASD move · Mouse look · <b>Hold SHIFT to crouch (quiet)</b> · Space jump · <b>E / Click</b> to use · Esc pause</p>
+ <p style="font-size:13px;opacity:.5">A game by FiverFlow · Chrome edition</p></div>
+<div id="dead" class="screen hide"><h1 style="font-size:90px">YOU DIED</h1><p id="deadTip"></p><button class="btn" id="revive">❤️ REVIVE (FREE)</button><button class="btn" id="restart">🔁 START OVER</button></div>
+<div id="paused" class="screen hide"><h2>PAUSED</h2><button class="btn" id="resume">▶ RESUME</button></div>
+<div id="keypad" class="hide"><div class="panel"><div id="kdisp">_ _ _ _</div><div id="kgrid"></div><p style="font-family:system-ui;margin:12px 0 0;opacity:.7">Esc to step away</p></div></div>
+<div id="trap" class="hide"><div class="panel" style="background:#2a0006;border-color:#ff2235"><h2 style="margin:0 0 6px">IT'S A TRAP!</h2><p style="font-family:system-ui;margin:0 0 14px">Click PUSH <b id="pushLeft">50</b> times!</p><button id="push">PUSH!</button></div></div>
+<canvas id="scare"></canvas>
+<div id="fade"></div>
+<script src="three.min.js"></script>
+<script>
+/* CODEBREAKER [HORROR] — Chrome edition, Chapter 1: THE WRONG STORE. A game by FiverFlow.
+   Rebuilt from the Roblox version: same store, same 8OTHY (red head with ear bumps, no eyes, two black
+   ball bodies, thin legs), same rules — he hunts by SOUND, crouch (Shift) to be quiet, 4 real clue
+   cookies + 2 FAKE ones, the GIGA cookie paper with Roman numerals, 3 trap closets (50 pushes),
+   the keypad on the back door, then the chase and the crack escape. */
+const $=id=>document.getElementById(id);
+const R=(a,b)=>a+Math.random()*(b-a),RI=(a,b)=>Math.floor(R(a,b+1));
+// ---------------- three.js setup ----------------
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x050203);scene.fog=new THREE.Fog(0x050203,8,95);
+const camera=new THREE.PerspectiveCamera(72,1,.1,400);
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
+scene.add(new THREE.AmbientLight(0x50303a,.55));
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+const MAT={floor:M(0x3a2a24),wall:M(0x2a1a1c),shelf:M(0x5a3a22),cookie:M(0xc8823a),pink:new THREE.MeshLambertMaterial({color:0xff9ec8,emissive:0x401020}),black:M(0x0a0405),red:new THREE.MeshLambertMaterial({color:0xd81e28,emissive:0x300004}),desk:M(0x5a3c28),door:M(0x2a2a30),closet:M(0x4a3020)};
+const solids=[],clickables=[];   // solids: boxes you bump into. clickables: things you can use with E / click
+function box(w,h,d,mat,x,y,z,solid=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);scene.add(m);if(solid)solids.push({m,x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y1:y+h/2});return m}
+// ---------------- THE GIGA COOKIE STORE ----------------
+box(122,1,204,MAT.floor,0,-.5,-100,false);box(122,1,204,MAT.wall,0,22,-100,false);
+box(1,22,204,MAT.wall,-61,11,-100);box(1,22,204,MAT.wall,61,11,-100);box(122,22,1,MAT.wall,0,11,2);
+box(55,22,1,MAT.wall,-33.5,11,-202);box(55,22,1,MAT.wall,33.5,11,-202);   // back wall, with a gap for the back door
+// ceiling lights (some flicker)
+const LIGHTS=[];for(const z of[-25,-75,-125,-175])for(const x of[-30,30]){const tube=new THREE.Mesh(new THREE.BoxGeometry(10,.3,1),new THREE.MeshBasicMaterial({color:0xeaf2ff}));tube.position.set(x,21.3,z);scene.add(tube);
+ const pl=new THREE.PointLight(0xdde6ff,.9,48,1.6);pl.position.set(x,19,z);scene.add(pl);LIGHTS.push({tube,pl,base:.9,flick:Math.random()<.4})}
+// shelves full of cookies (one InstancedMesh, so it stays fast)
+const cookieGeo=new THREE.CylinderGeometry(.8,.8,.3,12);cookieGeo.rotateZ(Math.PI/2);
+const shelfSpots=[];
+function shelfRow(x,z0,z1){const len=z0-z1,mid=(z0+z1)/2;box(1,9,len,MAT.shelf,x,4.5,mid);
+ for(const side of[-1,1]){for(let y=1.8;y<9;y+=2.2){box(2.2,.25,len,MAT.shelf,x+side*1.4,y-.15,mid,false);for(let z=z0-1.5;z>z1+1;z-=2)shelfSpots.push(new THREE.Vector3(x+side*1.5,y+.65,z))}}
+ solids.push({x0:x-2.6,x1:x+2.6,z0:z1,z1:z0,y1:9})}
+for(const x of[-42,-20,20,42]){shelfRow(x,-20,-85);shelfRow(x,-115,-185)}
+// ---------------- THE CODE ----------------
+const SYMBOLS=['🔺','⭐','🟦','🟢'],FAKE=['🔻','🟡'],ROMAN=['I','II','III','IV'];
+let digits,order,CODE;
+function rollCode(){digits=[0,1,2,3].map(()=>RI(0,9));order=[1,2,3,4];for(let i=3;i>0;i--){const j=RI(0,i);[order[i],order[j]]=[order[j],order[i]]}
+ const chars=[];for(let i=0;i<4;i++)chars[order[i]-1]=String(digits[i]);CODE=chars.join('')}
+// clue cookies: 4 real + 2 fake, pink, hidden among the normal ones
+const clueIdx=new Set();let clueList=[];
+const cookieInst=new THREE.InstancedMesh(cookieGeo,MAT.cookie,shelfSpots.length);scene.add(cookieInst);
+const dummy=new THREE.Object3D(),clueMeshes=[];
+function placeCookies(){clueMeshes.forEach(m=>{scene.remove(m);const i=clickables.indexOf(m);if(i>=0)clickables.splice(i,1)});clueMeshes.length=0;clueIdx.clear();
+ while(clueIdx.size<6)clueIdx.add(RI(0,shelfSpots.length-1));clueList=[...clueIdx];
+ shelfSpots.forEach((p,i)=>{dummy.position.copy(p);dummy.scale.setScalar(clueIdx.has(i)?0:1);dummy.updateMatrix();cookieInst.setMatrixAt(i,dummy.matrix)});cookieInst.instanceMatrix.needsUpdate=true;
+ clueList.forEach((si,k)=>{const m=new THREE.Mesh(cookieGeo,MAT.pink);m.position.copy(shelfSpots[si]);m.userData={kind:'clue',k,label:'Take cookie'};scene.add(m);clickables.push(m);clueMeshes.push(m)})}
+// normal cookies can be clicked too ("Just crumbs...") — one invisible box per shelf face makes that work
+// ---------------- DESK + GIGA COOKIE ----------------
+box(14,.6,8,MAT.desk,-31,3.5,-100);for(const[dx,dz]of[[-6.5,-3.5],[6.5,-3.5],[-6.5,3.5],[6.5,3.5]])box(.6,3.2,.6,MAT.desk,-31+dx,1.6,-100+dz,false);
+solids.push({x0:-38,x1:-24,z0:-104,z1:-96,y1:3.8});
+const giga=new THREE.Mesh(new THREE.CylinderGeometry(4,4,1.2,32),MAT.cookie);giga.rotation.x=Math.PI/2;giga.position.set(-31,8.2,-100);scene.add(giga);
+for(let i=0;i<10;i++){const chip=new THREE.Mesh(new THREE.SphereGeometry(.35,6,6),M(0x4a2410));const a=Math.random()*6.28,r=Math.random()*3.2;chip.position.set(Math.cos(a)*r,.62,Math.sin(a)*r);giga.add(chip)}
+giga.userData={kind:'giga',label:'Break the GIGA cookie'};clickables.push(giga);
+let paperMesh=null;
+function paperTexture(lines){const cv=document.createElement('canvas');cv.width=512;cv.height=340;const x=cv.getContext('2d');x.fillStyle='#f0ebdc';x.fillRect(0,0,512,340);x.fillStyle='#2a1e1e';x.font='bold 64px "Segoe UI Emoji",system-ui';
+ lines.forEach((l,i)=>x.fillText(l,40,80+i*75));return new THREE.CanvasTexture(cv)}
+// ---------------- CLOSETS (3 are TRAPS) ----------------
+const closets=[];
+function closet(x,z,face){const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=face;scene.add(g);
+ const sideA=new THREE.Mesh(new THREE.BoxGeometry(.4,10,5),MAT.closet);sideA.position.set(-3,5,0);const sideB=sideA.clone();sideB.position.x=3;const top=new THREE.Mesh(new THREE.BoxGeometry(6.4,.4,5),MAT.closet);top.position.y=10;
+ const back=new THREE.Mesh(new THREE.BoxGeometry(6.4,10,.4),MAT.closet);back.position.set(0,5,-2.5);const door=new THREE.Mesh(new THREE.BoxGeometry(6,9.6,.3),M(0x6a4428));door.position.set(0,4.9,2.6);
+ for(let i=0;i<7;i++){const sl=new THREE.Mesh(new THREE.BoxGeometry(5,.2,.1),M(0x2a1a10));sl.position.set(0,2+i*1.1,.18);door.add(sl)}
+ g.add(sideA,sideB,top,back,door);const wp=new THREE.Vector3(0,0,0).applyMatrix4(g.matrixWorld);g.updateMatrixWorld();
+ const c={g,door,trap:false,pos:new THREE.Vector3(x,0,z),face};door.userData={kind:'closet',c,label:'Hide'};clickables.push(door);closets.push(c);
+ const fx=Math.sin(face),fz=Math.cos(face);solids.push({x0:x-2.7,x1:x+2.7,z0:z-3.3,z1:z+3.3,y1:10,closet:c})}
+for(const z of[-35,-65,-135,-165,-195]){closet(-57.5,z,Math.PI/2);closet(57.5,z,-Math.PI/2)}
+// ---------------- BACK DOOR + KEYPAD ----------------
+const backDoor=box(12,14,1,MAT.door,0,7,-201.5);
+const kp=new THREE.Mesh(new THREE.BoxGeometry(2,3,.4),M(0x1c1c22));kp.position.set(8.5,6,-201);scene.add(kp);
+const kpScreen=new THREE.Mesh(new THREE.PlaneGeometry(1.6,.6),new THREE.MeshBasicMaterial({color:0x3aff6a}));kpScreen.position.set(0,.9,.21);kp.add(kpScreen);
+kp.userData={kind:'keypad',label:'Enter code'};clickables.push(kp);
+const exitSign=new THREE.Mesh(new THREE.PlaneGeometry(4,1.2),new THREE.MeshBasicMaterial({color:0xff2030}));exitSign.position.set(0,15.5,-200.9);scene.add(exitSign);
+// ---------------- THE ENDING: the hallway behind the door (zappers, then the crack) ----------------
+const END={z0:-202,z1:-320};
+box(20,1,118,MAT.floor,0,-.5,-261,false);box(20,1,118,MAT.wall,0,16,-261,false);box(1,16,118,M(0x1a1a22),-10.5,8,-261);box(1,16,118,M(0x1a1a22),10.5,8,-261);
+const zappers=[];for(let k=0;k<5;k++){const z=-222-k*16,side=k%2?1:-1;const bar=new THREE.Mesh(new THREE.BoxGeometry(12,.4,.4),new THREE.MeshBasicMaterial({color:0x66ccff}));bar.position.set(side*4,2.5,z);scene.add(bar);
+ const pl=new THREE.PointLight(0x66ccff,1.2,14);pl.position.set(side*4,3,z);scene.add(pl);zappers.push({bar,pl,x0:side*4-6,x1:side*4+6,z,phase:k*.7})}
+// the UNBREAKABLE DOOR: 10 wide in the middle, with a crack on each side you squeeze through (crouch!)
+box(10,16,2,M(0x3a3a44),0,8,-300);box(2.6,16,2,M(0x1a1a22),-9.2,8,-300);box(2.6,16,2,M(0x1a1a22),9.2,8,-300);
+const crouchBeams=[box(2.9,12,2,M(0x1a1a22),-6.45,10.2,-300,false),box(2.9,12,2,M(0x1a1a22),6.45,10.2,-300,false)];   // you can only fit under these if you crouch
+const doorLight=new THREE.PointLight(0xffffff,1.4,30);doorLight.position.set(0,12,-310);scene.add(doorLight);
+// ---------------- 8OTHY ----------------
+const bothy=new THREE.Group();
+{const ball=(r,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),mat);m.position.set(x,y,z);bothy.add(m);return m};
+ for(const bx of[-1.8,1.8]){ball(1.7,MAT.black,bx,5.4,0);for(const s of[-1,1]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.25,5.2,.25),MAT.black);leg.position.set(bx+s*1.1,2.4,0);leg.rotation.z=s*.26;bothy.add(leg)}}
+ ball(1.8,MAT.red,0,8.3,0);ball(.9,MAT.red,-1.6,10.5,0);ball(.9,MAT.red,1.6,10.5,0)}
+scene.add(bothy);
+const glow8=new THREE.PointLight(0xff1020,1.1,22);glow8.position.set(0,8,0);bothy.add(glow8);
+const B={pos:new THREE.Vector3(0,0,-185),target:null,mode:'wander',wait:0,chase:false};
+const WALK=8,RUN=14,CHASE=15;
+const randomPoint=()=>new THREE.Vector3(R(-50,50),0,R(-190,-15));
+function makeNoise(p,why){if(B.chase)return;B.mode='hunt';B.target=new THREE.Vector3(p.x,0,p.z);B.wait=0}
+// ---------------- the player ----------------
+const P={pos:new THREE.Vector3(0,0,-8),vel:new THREE.Vector3(),yaw:0,pitch:0,crouch:false,ground:true,hidden:null,trap:null,dead:false,alive:false,inEnding:false,won:false};
+const keys={};let locked=false,state='menu',notes=[];
+// ---------------- UI helpers ----------------
+let toastT=null;function toast(t,ms=2200){$('toast').textContent=t;$('toast').style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>$('toast').style.opacity=0,ms)}
+function drawNotes(){$('noteList').innerHTML=notes.length?notes.map(n=>'<div>'+n+'</div>').join(''):'Find the clue cookies...'}
+// ---------------- sound (all made live, no files) ----------------
+let A,master;function audio(){if(A)return;A=new AudioContext();master=A.createGain();master.gain.value=.8;master.connect(A.destination);
+ const nb=A.createBuffer(1,A.sampleRate,A.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;A.noise=nb;
+ // the creepy store hum that never stops
+ const hum=A.createOscillator();hum.type='sawtooth';hum.frequency.value=55;const hf=A.createBiquadFilter();hf.type='lowpass';hf.frequency.value=120;const hg=A.createGain();hg.gain.value=.05;hum.connect(hf);hf.connect(hg);hg.connect(master);hum.start();
+ A.growl=A.createGain();A.growl.gain.value=0;A.growl.connect(master);const go=A.createOscillator();go.type='sawtooth';go.frequency.value=48;const gf=A.createBiquadFilter();gf.type='bandpass';gf.frequency.value=300;gf.Q.value=4;go.connect(gf);gf.connect(A.growl);go.start();
+ const lfo=A.createOscillator();lfo.frequency.value=7;const lg=A.createGain();lg.gain.value=12;lfo.connect(lg);lg.connect(go.frequency);lfo.start()}
+const env=(v,a,d,dest)=>{const g=A.createGain(),t=A.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0005,t+a+d);g.connect(dest||master);return g};
+const osc=(type,f,len,dest)=>{const o=A.createOscillator();o.type=type;o.frequency.value=f;o.connect(dest);o.start();o.stop(A.currentTime+len);return o};
+const nz=(len,dest,type,f)=>{const s=A.createBufferSource();s.buffer=A.noise;const fl=A.createBiquadFilter();fl.type=type;fl.frequency.value=f;s.connect(fl);fl.connect(dest);s.start();s.stop(A.currentTime+len)};
+const SFX={step:v=>A&&nz(.07,env(.12*v,.002,.06),'lowpass',500),beep:()=>A&&osc('square',1200,.08,env(.1,.002,.07)),bad:()=>A&&osc('square',180,.4,env(.2,.005,.35)),good:()=>{if(!A)return;[880,1175,1568].forEach((f,i)=>setTimeout(()=>osc('square',f,.12,env(.1,.002,.1)),i*90))},
+ crunch:()=>A&&nz(.2,env(.35,.002,.18),'bandpass',1800),slam:()=>{if(!A)return;nz(.5,env(1,.001,.45),'lowpass',500);const o=osc('square',70,.4,env(.5,.001,.35));o.frequency.exponentialRampToValueAtTime(28,A.currentTime+.35)},
+ heart:v=>{if(!A)return;[0,170].forEach((d,i)=>setTimeout(()=>{const o=osc('sine',62,.25,env((i?.6:.9)*v,.006,.16));o.frequency.exponentialRampToValueAtTime(38,A.currentTime+.15)},d))},
+ scream:()=>{if(!A)return;const g=env(.7,.01,1.1),f=A.createBiquadFilter();f.type='bandpass';f.frequency.value=1100;f.Q.value=3;f.connect(g);const o=osc('sawtooth',620,1.2,f);o.frequency.exponentialRampToValueAtTime(300,A.currentTime+1.1);nz(1,env(.4,.005,.9),'highpass',2500)},
+ zap:()=>A&&nz(.15,env(.3,.001,.12),'highpass',3000),door:()=>{if(!A)return;nz(1.2,env(.4,.05,1.1),'lowpass',300)}};
+// ---------------- input ----------------
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')interact();if(e.code==='Escape'&&state==='keypad')closeKeypad()});
+addEventListener('keyup',e=>keys[e.code]=false);
+renderer.domElement.addEventListener('click',()=>{if(state==='play'&&!locked)renderer.domElement.requestPointerLock();else if(locked)interact()});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;if(!locked&&state==='play'){state='paused';$('paused').classList.remove('hide')}});
+addEventListener('mousemove',e=>{if(!locked)return;P.yaw-=e.movementX*.0024;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*.0024))});
+$('resume').onclick=()=>{$('paused').classList.add('hide');state='play';renderer.domElement.requestPointerLock()};
+// ---------------- using things (E / click) ----------------
+const ray=new THREE.Raycaster();let looking=null;
+function lookTarget(){ray.setFromCamera({x:0,y:0},camera);ray.far=11;const hit=ray.intersectObjects(clickables,false)[0];return hit?hit.object:null}
+function interact(){if(state!=='play')return;audio();
+ if(P.hidden){leaveCloset();return}if(P.trap)return;
+ const o=looking;if(!o)return;const u=o.userData;
+ if(u.kind==='clue'){const k=u.k;let sym,num;if(k<4){sym=SYMBOLS[k];num=digits[k]}else{sym=FAKE[k-4];num=RI(0,9)}
+  notes.push(sym+' = '+num);drawNotes();toast('Clue found: '+sym+' = '+num);SFX.crunch();scene.remove(o);clickables.splice(clickables.indexOf(o),1)}
+ else if(u.kind==='giga'){const lines=[0,1,2,3].map(i=>SYMBOLS[i]+' '+ROMAN[order[i]-1]);notes.push('Paper: '+lines.join('  '));drawNotes();SFX.crunch();
+  scene.remove(giga);clickables.splice(clickables.indexOf(giga),1);paperMesh=new THREE.Mesh(new THREE.PlaneGeometry(3,2),new THREE.MeshBasicMaterial({map:paperTexture(lines)}));paperMesh.rotation.x=-Math.PI/2;paperMesh.position.set(-31,3.85,-100);scene.add(paperMesh);
+  toast('The GIGA cookie had a paper inside!',3000);makeNoise(giga.position)}
+ else if(u.kind==='closet')enterCloset(u.c);
+ else if(u.kind==='keypad')openKeypad()}
+// closets
+function enterCloset(c){P.savePos=P.pos.clone();const fwd=new THREE.Vector3(Math.sin(c.face),0,Math.cos(c.face));P.pos.copy(c.pos).addScaledVector(fwd,.2);P.yaw=c.face+Math.PI;P.pitch=0;SFX.door();
+ if(c.trap){P.trap=c;c.pushes=50;$('pushLeft').textContent=50;$('trap').classList.remove('hide');document.exitPointerLock();state='trap';toast("IT'S A TRAP! Click PUSH 50 times!",3000)}
+ else{P.hidden=c;$('slats').style.display='block';toast('Hiding... press E to get out')}}
+function leaveCloset(){const c=P.hidden||P.trap;P.hidden=null;P.trap=null;$('slats').style.display='none';const fwd=new THREE.Vector3(Math.sin(c.face),0,Math.cos(c.face));P.pos.copy(c.pos).addScaledVector(fwd,5);SFX.door()}
+$('push').onclick=()=>{if(!P.trap)return;audio();P.trap.pushes--;$('pushLeft').textContent=P.trap.pushes;nz(.12,env(.3,.001,.1),'lowpass',400);
+ if(P.trap.pushes%10===0)makeNoise(P.trap.pos);   // the banging is LOUD
+ if(P.trap.pushes<=0){$('trap').classList.add('hide');leaveCloset();toast('You escaped!');state='play';renderer.domElement.requestPointerLock()}};
+// keypad
+let entered='';
+'123456789C0✔'.split('').forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>keyPress(k);$('kgrid').appendChild(b)});
+function showEntered(){$('kdisp').textContent=(entered+'____').slice(0,4).split('').join(' ')}
+function openKeypad(){state='keypad';entered='';showEntered();$('keypad').classList.remove('hide');document.exitPointerLock()}
+function closeKeypad(){$('keypad').classList.add('hide');state='play';renderer.domElement.requestPointerLock()}
+function keyPress(k){audio();SFX.beep();if(k==='C'){entered='';showEntered();return}if(k==='✔'){if(entered===CODE)openDoor();else{SFX.bad();$('kdisp').textContent='WRONG';makeNoise(kp.position);setTimeout(()=>{entered='';showEntered()},700)}return}
+ if(entered.length<4){entered+=k;showEntered()}}
+addEventListener('keydown',e=>{if(state==='keypad'&&/^Digit[0-9]$/.test(e.code))keyPress(e.code.slice(5));if(state==='keypad'&&e.code==='Backspace'){entered=entered.slice(0,-1);showEntered()}if(state==='keypad'&&e.code==='Enter')keyPress('✔')});
+// ---------------- the ending ----------------
+let doorOpen=false;
+function openDoor(){SFX.good();$('keypad').classList.add('hide');state='play';renderer.domElement.requestPointerLock();doorOpen=true;toast('The door is open... RUN!',3000);
+ const s=solids.findIndex(b=>b.m===backDoor);if(s>=0)solids.splice(s,1);SFX.door();backDoor.position.y=21;
+ setTimeout(()=>{SFX.slam();setTimeout(()=>{SFX.slam();toast('BOOM!',1500);B.chase=true;B.pos.set(0,0,-185);B.mode='hunt'},700)},1500)}
+function win(){if(P.won)return;P.won=true;state='won';document.exitPointerLock();const f=$('fade');f.textContent='The end...';f.style.opacity=1;f.style.pointerEvents='auto';
+ setTimeout(()=>f.textContent='The end...  Or is it?',2500);setTimeout(()=>{f.style.opacity=0;f.style.pointerEvents='none';$('menu').classList.remove('hide');$('menu').querySelector('h2').textContent='[HORROR] — CHAPTER 1 COMPLETE!';state='menu'},6500)}
+// ---------------- dying ----------------
+const sc=$('scare'),sx=sc.getContext('2d');
+function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();SFX.scream();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();
+ (function jump(){const k=(performance.now()-t0)/700;if(k>1){sc.style.display='none';$('deadTip').textContent=why;$('dead').classList.remove('hide');return}
+  const W=sc.width,H=sc.height,s=(.4+k*1.6)*Math.min(W,H)/2,cx=W/2+R(-30,30),cy=H/2+R(-30,30);sx.fillStyle='#000';sx.fillRect(0,0,W,H);
+  sx.fillStyle='#d81e28';sx.shadowColor='#f00';sx.shadowBlur=60;sx.beginPath();sx.arc(cx-s*.8,cy-s*.85,s*.48,0,7);sx.arc(cx+s*.8,cy-s*.85,s*.48,0,7);sx.fill();sx.beginPath();sx.arc(cx,cy,s,0,7);sx.fill();sx.shadowBlur=0;
+  sx.fillStyle='rgba(255,255,255,.25)';sx.beginPath();sx.ellipse(cx-s*.35,cy-s*.45,s*.25,s*.13,-.6,0,7);sx.fill();requestAnimationFrame(jump)})()}
+$('revive').onclick=()=>{$('dead').classList.add('hide');P.dead=false;state='play';P.hidden=null;P.trap=null;$('slats').style.display='none';
+ // revive where you died, but 8OTHY gets sent away so you are not caught again instantly
+ B.pos.copy(B.chase?new THREE.Vector3(0,0,-185):randomPoint());if(!B.chase){B.mode='wander';B.target=randomPoint()}renderer.domElement.requestPointerLock()};
+$('restart').onclick=()=>{$('dead').classList.add('hide');startGame()};
+// ---------------- start ----------------
+function startGame(){audio();A.resume();rollCode();placeCookies();notes=[];drawNotes();
+ if(paperMesh){scene.remove(paperMesh);paperMesh=null}if(!clickables.includes(giga)){scene.add(giga);clickables.push(giga)}
+ closets.forEach(c=>c.trap=false);const pick=[...closets].sort(()=>Math.random()-.5).slice(0,3);pick.forEach(c=>c.trap=true);
+ if(!solids.some(b=>b.m===backDoor))solids.push({m:backDoor,x0:-6,x1:6,z0:-202,z1:-201,y1:14});doorOpen=false;backDoor.position.y=7;
+ Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false});P.vel.set(0,0,0);
+ Object.assign(B,{pos:new THREE.Vector3(0,0,-185),target:randomPoint(),mode:'wander',wait:0,chase:false});
+ ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
+ toast('Find the PINK clue cookies. Stay quiet...',3500);console.log('CODEBREAKER code (for testing): '+CODE)}
+$('play').onclick=startGame;
+// ---------------- the game loop ----------------
+const PR=1.1;   // how fat you are
+function collide(p,crouching){for(const b of solids){if(b.closet&&P.hidden)continue;if(p.x>b.x0-PR&&p.x<b.x1+PR&&p.z>b.z0-PR&&p.z<b.z1+PR&&p.y<b.y1-.3){
+  const dx0=p.x-(b.x0-PR),dx1=(b.x1+PR)-p.x,dz0=p.z-(b.z0-PR),dz1=(b.z1+PR)-p.z,m=Math.min(dx0,dx1,dz0,dz1);if(m===dx0)p.x=b.x0-PR;else if(m===dx1)p.x=b.x1+PR;else if(m===dz0)p.z=b.z0-PR;else p.z=b.z1+PR}}
+ if(!crouching)for(const cb of crouchBeams){const bx=cb.position.x;if(Math.abs(p.x-bx)<1.45+PR&&Math.abs(p.z+300)<1+PR){p.z=p.z>-300?-298.9:-301.1}}}   // the crack: crouch to fit
+let last=performance.now(),stepT=0,heartT=0,flickT=0;
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
+ if((state==='play'||state==='keypad'||state==='trap')&&!P.dead){const canMove=state==='play';
+  // moving
+  P.crouch=!!(keys.ShiftLeft||keys.ShiftRight);const sp=P.crouch?7:16;let mx=0,mz=0;if(canMove&&!P.hidden&&!P.trap){if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(keys.KeyA)mx-=1;if(keys.KeyD)mx+=1}
+  const len=Math.hypot(mx,mz)||1,f=new THREE.Vector3(-Math.sin(P.yaw),0,-Math.cos(P.yaw)),r=new THREE.Vector3(Math.cos(P.yaw),0,-Math.sin(P.yaw));
+  const move=f.multiplyScalar(-mz/len*sp).add(r.multiplyScalar(mx/len*sp));if(!P.hidden&&!P.trap){P.pos.x+=move.x*dt;P.pos.z+=move.z*dt}
+  if(canMove&&keys.Space&&P.ground&&!P.crouch&&!P.hidden){P.vel.y=14;P.ground=false}P.vel.y-=40*dt;P.pos.y+=P.vel.y*dt;if(P.pos.y<=0){P.pos.y=0;P.vel.y=0;P.ground=true}
+  if(!P.hidden&&!P.trap)collide(P.pos,P.crouch);
+  const moving=(mx||mz)&&!P.hidden&&!P.trap;
+  // footsteps: 8OTHY hears you within 40 studs unless you crouch
+  if(moving){stepT-=dt;if(stepT<=0){stepT=P.crouch?.6:.38;SFX.step(P.crouch?.25:1);if(!P.crouch&&P.pos.distanceTo(B.pos)<40)makeNoise(P.pos)}}
+  $('crouch').textContent=P.crouch?'🤫 crouching (quiet)':'🚶 walking (loud)';
+  // ending: zappers and escaping through the crack
+  if(doorOpen&&P.pos.z<-203)P.inEnding=true;
+  zappers.forEach(zp=>{const on=Math.sin(now/1000*2.2+zp.phase)>0;zp.bar.material.color.setHex(on?0x99e6ff:0x223344);zp.pl.intensity=on?1.4:.1;
+   if(on&&Math.abs(P.pos.z-zp.z)<.8&&P.pos.x>zp.x0&&P.pos.x<zp.x1&&P.pos.y<3)die('ZAPPED! Wait for the zapper to turn off before you pass.')});
+  if(P.pos.z<-303)win();
+  // 8OTHY
+  if(B.chase){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}
+  if(B.wait>0)B.wait-=dt;else{if(!B.target)B.target=randomPoint();const off=new THREE.Vector3(B.target.x-B.pos.x,0,B.target.z-B.pos.z);
+   if(off.length()<1.5&&!B.chase){if(B.mode==='hunt'){B.mode='wander';B.wait=1.5}B.target=randomPoint()}
+   else{const speed=B.chase?CHASE:(B.mode==='hunt'?RUN:WALK);off.normalize();B.pos.addScaledVector(off,Math.min(speed*dt,off.length()+speed*dt));bothy.rotation.y=Math.atan2(off.x,off.z)}}
+  if(B.pos.z<-198&&!doorOpen)B.pos.z=-198;if(!B.chase&&B.pos.z<-198)B.pos.z=-198;
+  bothy.position.copy(B.pos);bothy.position.y=Math.abs(Math.sin(now/120))*.25*(B.mode==='hunt'?1:.4);
+  const dist=Math.hypot(P.pos.x-B.pos.x,P.pos.z-B.pos.z);
+  if(dist<4.5&&!P.hidden)die(P.trap?'8OTHY heard you banging in the trap closet...':(B.chase?'He caught you in the hallway. Run, and crouch through the crack!':'8OTHY heard your footsteps. Hold SHIFT to crouch and stay quiet!'));
+  // heartbeat + growl when he is close
+  const close=Math.max(0,1-dist/45);if(A){A.growl.gain.value=(B.mode==='hunt'?.18:.06)*close}heartT-=dt;if(close>.3&&heartT<=0){SFX.heart(close);heartT=1.1-close*.7}
+  $('heart').style.boxShadow='inset 0 0 160px 40px rgba(255,0,20,'+(close*.55)+')';
+  // what am I looking at?
+  looking=P.hidden?null:lookTarget();$('prompt').style.display=(looking||P.hidden)?'block':'none';$('prompt').textContent=P.hidden?'E — get out':('E — '+(looking?looking.userData.label:''));
+ }
+ // flickering lights
+ flickT-=dt;if(flickT<=0){flickT=R(.05,.3);LIGHTS.forEach(L=>{if(L.flick){const on=Math.random()>.25;L.pl.intensity=on?L.base:0;L.tube.material.color.setHex(on?0xeaf2ff:0x222228)}})}
+ // camera
+ const eye=P.hidden?4.5:(P.crouch?2.6:4.5);camera.position.set(P.pos.x,P.pos.y+eye,P.pos.z);camera.rotation.set(P.pitch,P.yaw,0,'YXZ');
+ renderer.render(scene,camera)}
+requestAnimationFrame(loop);
+window.CB={P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
+</script></body></html>
