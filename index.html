@@ -58,8 +58,8 @@ canvas{display:block}
 <div id="paused" class="screen hide"><h2>PAUSED</h2><button class="btn" id="resume">▶ RESUME</button></div>
 <div id="keypad" class="hide"><div class="panel"><div id="kdisp">_ _ _ _</div><div id="kgrid"></div><p style="font-family:system-ui;margin:12px 0 0;opacity:.7">Esc to step away</p></div></div>
 <div id="trap" class="hide"><div class="panel" style="background:#2a0006;border-color:#ff2235"><h2 style="margin:0 0 6px">IT'S A TRAP!</h2><p style="font-family:system-ui;margin:0 0 14px">Click PUSH <b id="pushLeft">50</b> times!</p><button id="push">PUSH!</button></div></div>
-<div id="hb" class="hide"><div style="font-size:30px;color:#ff4050;text-shadow:0 0 20px #f00;margin-bottom:8px">HE'S AT THE DOOR... STAY CALM</div><canvas id="hbc" width="760" height="170"></canvas>
- <div style="font-family:system-ui;font-size:18px;margin-top:8px">Press <b>SPACE</b> or <b>CLICK</b> when the heart hits the circle!</div></div>
+<div id="hb" class="hide"><div style="font-size:30px;color:#ff4050;text-shadow:0 0 20px #f00;margin-bottom:8px">HE'S AT THE DOOR... STAY CALM</div><canvas id="hbc" width="820" height="230"></canvas>
+ <div style="font-family:system-ui;font-size:18px;margin-top:8px"><b style="color:#ff7a9a">LEFT CLICK</b> for hearts from the left · <b style="color:#7ac8ff">RIGHT CLICK</b> for hearts from the right — when they reach the middle!</div></div>
 <div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><div id="count"></div>
  <div id="lobbyHint">WASD walk · <b>hold RIGHT-CLICK + drag</b> to turn the camera · stand on the green <b>START</b> pad to play</div></div>
 <div id="achWin" class="hide"><h2>🏆 ACHIEVEMENTS</h2><div id="achList"></div><button id="achClose">✖ CLOSE</button></div>
@@ -221,10 +221,11 @@ const SFX={step:v=>A&&nz(.07,env(.12*v,.002,.06),'lowpass',500),beep:()=>A&&osc(
  scream:()=>{if(!A)return;const g=env(.7,.01,1.1),f=A.createBiquadFilter();f.type='bandpass';f.frequency.value=1100;f.Q.value=3;f.connect(g);const o=osc('sawtooth',620,1.2,f);o.frequency.exponentialRampToValueAtTime(300,A.currentTime+1.1);nz(1,env(.4,.005,.9),'highpass',2500)},
  zap:()=>A&&nz(.15,env(.3,.001,.12),'highpass',3000),door:()=>{if(!A)return;nz(1.2,env(.4,.05,1.1),'lowpass',300)}};
 // ---------------- input ----------------
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}if(state==='heartbeat'&&(e.code==='Space'||e.code==='Enter')&&!e.repeat){hbPress();return}if(e.code==='KeyE')interact();if(e.code==='Escape'&&state==='keypad')closeKeypad()});
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}if(state==='heartbeat'&&!e.repeat&&(e.code==='KeyA'||e.code==='ArrowLeft')){hbPress(-1);return}if(state==='heartbeat'&&!e.repeat&&(e.code==='KeyD'||e.code==='ArrowRight')){hbPress(1);return}if(e.code==='KeyE')interact();if(e.code==='Escape'&&state==='keypad')closeKeypad()});
 addEventListener('keyup',e=>keys[e.code]=false);
-renderer.domElement.addEventListener('click',()=>{if(state==='heartbeat'){hbPress();return}if(state==='play'&&!locked)renderer.domElement.requestPointerLock();else if(locked)interact()});
-$('hbc').addEventListener('click',()=>hbPress());
+addEventListener('mousedown',e=>{if(state==='heartbeat'){e.preventDefault();hbPress(e.button===2?1:-1)}});addEventListener('contextmenu',e=>{if(state==='heartbeat')e.preventDefault()});
+renderer.domElement.addEventListener('click',()=>{if(state==='heartbeat')return;if(state==='play'&&!locked)renderer.domElement.requestPointerLock();else if(locked)interact()});
+
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;if(!locked&&state==='play'){state='paused';$('paused').classList.remove('hide')}});
 addEventListener('mousemove',e=>{if(!locked)return;P.yaw-=e.movementX*.0024;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*.0024))});
 $('resume').onclick=()=>{$('paused').classList.add('hide');state='play';renderer.domElement.requestPointerLock()};
@@ -262,35 +263,44 @@ function closeKeypad(){$('keypad').classList.add('hide');state='play';renderer.d
 function keyPress(k){audio();SFX.beep();if(k==='C'){entered='';showEntered();return}if(k==='✔'){if(entered===CODE)openDoor();else{SFX.bad();$('kdisp').textContent='WRONG';makeNoise(kp.position);setTimeout(()=>{entered='';showEntered()},700)}return}
  if(entered.length<4){entered+=k;showEntered()}}
 addEventListener('keydown',e=>{if(state==='keypad'&&/^Digit[0-9]$/.test(e.code))keyPress(e.code.slice(5));if(state==='keypad'&&e.code==='Backspace'){entered=entered.slice(0,-1);showEntered()}if(state==='keypad'&&e.code==='Enter')keyPress('✔')});
-// ---------------- the HEARTBEAT PUZZLE: 8OTHY is knocking on your closet door ----------------
-const HB={need:8,lives:3};let hb=null;const hbc=$('hbc'),hx=hbc.getContext('2d');
-function startHeartbeat(c){if(hb)return;state='heartbeat';hb={c,hits:0,misses:0,hearts:[],next:.8,gap:.9,t:0,knock:0,flash:0,msg:''};$('hb').classList.remove('hide');B.wait=999;
+// ---------------- the HEARTBEAT PUZZLE (Doors-style): a heart in the middle, half hearts slide in from both sides ----------------
+// LEFT click when a left half reaches the heart, RIGHT click when a right half does. Survive 5 seconds -> he leaves.
+// 3 mistakes -> HEART ATTACK -> you get thrown out of the closet, right in front of him.
+const HB={time:5,lives:3,speed:330,win:42};let hb=null;const hbc=$('hbc'),hx=hbc.getContext('2d');const CX=410,CY=118;
+function startHeartbeat(c){if(hb)return;state='heartbeat';hb={c,t:0,misses:0,hits:0,halves:[],next:.7,knock:0,flash:0,msg:'',lock:0,pulse:0};$('hb').classList.remove('hide');B.wait=999;
  B.pos.copy(closetFront(c));bothy.rotation.y=c.face+Math.PI;toast('KNOCK... KNOCK...',2000)}
-function hbPress(){if(!hb)return;const TARGET=140,WIN=46;if(hb.lock>0)return;const h=hb.hearts.find(h=>!h.done&&Math.abs(h.x-TARGET)<WIN);
- if(h){h.done='hit';hb.hits++;SFX.heart(.9);hb.msg='GOOD';hb.flash=.25}else{hb.msg='WAIT FOR IT...';hb.lock=.5}}   /* pressing early costs NO life, it just makes you wait a moment */
-function hbMiss(why){hb.misses++;hb.msg=why;hb.flash=-.35;SFX.bad();knockSound(1.6)}
+function hbPress(side){if(!hb||hb.lock>0)return;const h=hb.halves.find(h=>!h.done&&Math.abs(h.d)<HB.win);
+ if(h&&h.side===side){h.done='hit';hb.hits++;hb.pulse=1;SFX.heart(1);hb.msg='GOOD';hb.flash=.25}
+ else if(h){h.done='miss';hbMiss('WRONG BUTTON!')}
+ else{hb.msg='WAIT FOR IT...';hb.lock=.45}}   // too early: no mistake, just a short wait (so mashing doesn't work)
+function hbMiss(why){hb.misses++;hb.msg=why;hb.flash=-.4;SFX.bad();knockSound(1.6)}
 function knockSound(v=1){if(!A)return;nz(.12,env(.6*v,.001,.1),'lowpass',260);const o=osc('square',90,.12,env(.4*v,.001,.1));o.frequency.exponentialRampToValueAtTime(40,A.currentTime+.1)}
-function stepHeartbeat(dt){if(!hb)return;const SPEED=380,TARGET=140,WIN=46;hb.t+=dt;hb.lock=Math.max(0,(hb.lock||0)-dt);
- // he keeps knocking, and the door shakes
+function halfHeart(x,y,sz,side,col){hx.save();hx.translate(x,y);hx.beginPath();if(side<0){hx.moveTo(0,sz*.9);hx.bezierCurveTo(-sz*1.6,-sz*.1,-sz*.6,-sz*1.4,0,-sz*.45)}else{hx.moveTo(0,sz*.9);hx.bezierCurveTo(sz*1.6,-sz*.1,sz*.6,-sz*1.4,0,-sz*.45)}hx.closePath();hx.fillStyle=col;hx.fill();hx.restore()}
+function stepHeartbeat(dt){if(!hb)return;hb.t+=dt;hb.lock=Math.max(0,hb.lock-dt);hb.pulse*=Math.pow(.02,dt);
  hb.knock-=dt;if(hb.knock<=0){hb.knock=R(.45,.8);knockSound();hb.c.door.position.x=R(-.15,.15)}else hb.c.door.position.x*=.8;
- // hearts slide in from the right, and get closer together as you go
- hb.next-=dt;if(hb.next<=0&&hb.hearts.filter(h=>!h.done).length<3&&hb.hits+hb.hearts.filter(h=>!h.done).length<HB.need){hb.hearts.push({x:760});hb.gap=Math.max(.5,hb.gap*.94);hb.next=hb.gap*R(.85,1.25)}
- hb.hearts.forEach(h=>{h.x-=SPEED*dt;if(!h.done&&h.x<TARGET-WIN-6){h.done='miss';hbMiss('MISSED!')}});
+ // spawn half hearts from a random side, faster as time goes on
+ hb.next-=dt;if(hb.next<=0&&hb.t<HB.time-.6){hb.halves.push({side:Math.random()<.5?-1:1,d:-(CX+40)});hb.next=Math.max(.42,.75-hb.t*.05)*R(.85,1.2)}
+ hb.halves.forEach(h=>{h.d+=HB.speed*dt;if(!h.done&&h.d>HB.win){h.done='miss';hbMiss('MISSED!')}});   // d = how far past the middle it is (negative = still coming)
  if(hb.misses>=HB.lives)return hbFail();
- if(hb.hits>=HB.need)return hbWin();
- // draw it
- hx.clearRect(0,0,760,170);hx.fillStyle=hb.flash>0?'rgba(60,255,120,'+hb.flash+')':hb.flash<0?'rgba(255,0,30,'+(-hb.flash)+')':'rgba(0,0,0,0)';hx.fillRect(0,0,760,170);hb.flash*=.9;
- hx.strokeStyle='#ff2235';hx.lineWidth=3;hx.beginPath();hx.moveTo(0,85);for(let x=0;x<760;x+=4){const k=((x+hb.t*SPEED)%190)/190;hx.lineTo(x,85-(k>.42&&k<.46?50:k>.46&&k<.5?-30:0))}hx.stroke();   // heart monitor line
- hx.strokeStyle='#fff';hx.lineWidth=6;hx.beginPath();hx.arc(TARGET,85,WIN+6,0,7);hx.stroke();
- const heart=(x,col,sz)=>{hx.fillStyle=col;hx.beginPath();hx.moveTo(x,85+sz*.9);hx.bezierCurveTo(x-sz*1.6,85-sz*.1,x-sz*.6,85-sz*1.4,x,85-sz*.45);hx.bezierCurveTo(x+sz*.6,85-sz*1.4,x+sz*1.6,85-sz*.1,x,85+sz*.9);hx.fill()};
- hb.hearts.forEach(h=>{if(h.x>-40)heart(h.x,h.done==='hit'?'#3aff6a':h.done==='miss'?'#555':'#ff2a40',h.done==='hit'?26:22)});
- hx.font="900 26px 'Arial Black'";hx.fillStyle='#fff';hx.textAlign='left';hx.fillText('💓 '+hb.hits+' / '+HB.need,20,34);hx.textAlign='right';hx.fillText('❌ '+'●'.repeat(hb.misses)+'○'.repeat(HB.lives-hb.misses),740,34);
- if(hb.msg){hx.textAlign='center';hx.fillStyle=hb.msg==='GOOD'?'#3aff6a':'#ff4050';hx.fillText(hb.msg,380,150)}}
+ if(hb.t>=HB.time&&!hb.halves.some(h=>!h.done))return hbWin();
+ // draw: dark panel, heart-monitor line, the big heart in the middle, the halves sliding in
+ hx.clearRect(0,0,820,230);hx.fillStyle=hb.flash>0?'rgba(60,255,120,'+hb.flash+')':hb.flash<0?'rgba(255,0,30,'+(-hb.flash)+')':'rgba(0,0,0,0)';hx.fillRect(0,0,820,230);hb.flash*=.9;
+ hx.strokeStyle='rgba(255,40,60,.5)';hx.lineWidth=3;hx.beginPath();hx.moveTo(0,CY);for(let x=0;x<820;x+=4){const k=((x+hb.t*300)%205)/205;hx.lineTo(x,CY-(k>.42&&k<.46?55:k>.46&&k<.5?-35:0))}hx.stroke();
+ const big=58*(1+hb.pulse*.18);hx.save();hx.shadowColor='#ff2040';hx.shadowBlur=30+hb.pulse*40;halfHeart(CX,CY,big,-1,'#c8102a');halfHeart(CX,CY,big,1,'#c8102a');hx.restore();
+ hx.strokeStyle='rgba(255,255,255,.8)';hx.lineWidth=4;hx.beginPath();hx.arc(CX,CY,HB.win+18,0,7);hx.stroke();
+ hb.halves.forEach(h=>{if(h.done==='hit')return;const x=CX+h.side*(-h.d),col=h.done==='miss'?'#555':(h.side<0?'#ff7a9a':'#7ac8ff');halfHeart(x,CY,40,h.side,col)});
+ hx.font="900 26px 'Arial Black'";hx.textAlign='left';hx.fillStyle='#fff';hx.fillText('⏱ '+Math.max(0,HB.time-hb.t).toFixed(1)+'s',20,36);
+ hx.textAlign='right';hx.fillText('💔 '+'●'.repeat(hb.misses)+'○'.repeat(HB.lives-hb.misses),800,36);
+ hx.fillStyle='#ff7a9a';hx.textAlign='left';hx.font="900 20px 'Arial Black'";hx.fillText('◀ LEFT CLICK',20,215);hx.fillStyle='#7ac8ff';hx.textAlign='right';hx.fillText('RIGHT CLICK ▶',800,215);
+ if(hb.msg){hx.textAlign='center';hx.font="900 28px 'Arial Black'";hx.fillStyle=hb.msg==='GOOD'?'#3aff6a':'#ff4050';hx.fillText(hb.msg,CX,212)}}
 function hbEnd(){$('hb').classList.add('hide');hb.c.door.position.x=0;const c=hb.c;hb=null;return c}
 function hbWin(){hbEnd();state='play';toast('...he gave up and walked away.',2600);SFX.good();
  B.wait=0;B.mode='wander';B.closet=null;let p;do{p=randomPoint()}while(p.distanceTo(P.pos)<60);B.target=p}
-function hbFail(){const c=hbEnd();c.door.rotation.y=-1.4;SFX.slam();state='play';P.hidden=null;$('slats').style.display='none';
- B.wait=0;B.closet=null;B.pos.copy(closetFront(c));die('8OTHY heard your heartbeat and ripped the door open! Press SPACE right when the heart hits the circle.');setTimeout(()=>c.door.rotation.y=0,1500)}
+// HEART ATTACK: you get thrown out of the closet, and he is right there
+function hbFail(){const c=hbEnd();state='play';c.door.rotation.y=-1.4;SFX.slam();SFX.heart(1.4);
+ const a=$('angry');a.textContent='💔 HEART ATTACK!';a.style.opacity=1;setTimeout(()=>{a.style.opacity=0;a.textContent='BOOM! 8OTHY ANGERED!'},1800);
+ P.hidden=null;$('slats').style.display='none';P.pos.copy(closetFront(c)).add(new THREE.Vector3(Math.sin(c.face),0,Math.cos(c.face)).multiplyScalar(-1.5));P.yaw=c.face;P.pitch=0;P.down=1.6;
+ B.wait=0;B.closet=null;B.pos.copy(closetFront(c));setTimeout(()=>{c.door.rotation.y=0;if(!P.dead)die('HEART ATTACK! You got thrown out of the closet... right in front of 8OTHY.')},900)}
 // ---------------- the ending ----------------
 let doorOpen=false;
 function openDoor(){SFX.good();$('keypad').classList.add('hide');state='play';renderer.domElement.requestPointerLock();doorOpen=true;toast('The door is open... RUN!',3000);
