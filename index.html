@@ -224,7 +224,7 @@ const keys={};let locked=false,state='menu',notes=[];
 let toastT=null;function toast(t,ms=2200){$('toast').textContent=t;$('toast').style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>$('toast').style.opacity=0,ms)}
 function drawNotes(){$('noteList').innerHTML=notes.length?notes.map(n=>'<div>'+n+'</div>').join(''):'Find the clue cookies...'}
 // ---------------- sound (all made live, no files) ----------------
-let A,master;function audio(){if(A)return;A=new AudioContext();master=A.createGain();master.gain.value=.8*SET.vol;master.connect(A.destination);
+let A,master;function audio(){if(A)return;A=new AudioContext();master=A.createGain();master.gain.value=.8*SET.vol;master.connect(A.destination);musLoad();
  const nb=A.createBuffer(1,A.sampleRate,A.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;A.noise=nb;
  // the creepy store hum that never stops
  const hum=A.createOscillator();hum.type='sawtooth';hum.frequency.value=55;const hf=A.createBiquadFilter();hf.type='lowpass';hf.frequency.value=120;const hg=A.createGain();hg.gain.value=.05;hum.connect(hf);hf.connect(hg);hg.connect(master);hum.start();
@@ -238,6 +238,19 @@ const SFX={step:v=>A&&nz(.07,env(.12*v,.002,.06),'lowpass',500),beep:()=>A&&osc(
  heart:v=>{if(!A)return;[0,170].forEach((d,i)=>setTimeout(()=>{const o=osc('sine',62,.25,env((i?.6:.9)*v,.006,.16));o.frequency.exponentialRampToValueAtTime(38,A.currentTime+.15)},d))},
  scream:()=>{if(!A)return;const g=env(.7,.01,1.1),f=A.createBiquadFilter();f.type='bandpass';f.frequency.value=1100;f.Q.value=3;f.connect(g);const o=osc('sawtooth',620,1.2,f);o.frequency.exponentialRampToValueAtTime(300,A.currentTime+1.1);nz(1,env(.4,.005,.9),'highpass',2500)},
  zap:()=>A&&nz(.15,env(.3,.001,.12),'highpass',3000),door:()=>{if(!A)return;nz(1.2,env(.4,.05,1.1),'lowpass',300)}};
+// ---------------- MUSIC (FiverFlow picked these by ear: slow, tense, no singing) ----------------
+// lobby.wav in the lobby. In the cookie store, store-calm.wav and store-close.wav play at the SAME time
+// (same length, same chords) and the game fades from calm to close as 8OTHY gets near you.
+const MUSIC={buf:{},gain:{},ready:false};
+async function musLoad(){for(const k of['lobby','store-calm','store-close']){try{const r=await fetch('music/'+k+'.wav');MUSIC.buf[k]=await A.decodeAudioData(await r.arrayBuffer())}catch(e){console.warn('music',k,e)}}
+ const t=A.currentTime+.1;for(const k in MUSIC.buf){const g=A.createGain();g.gain.value=0;g.connect(master);const src=A.createBufferSource();src.buffer=MUSIC.buf[k];src.loop=true;src.connect(g);src.start(t);MUSIC.gain[k]=g}
+ MUSIC.ready=true}
+function musTick(){if(!A||!MUSIC.ready)return;const now=A.currentTime;
+ const inStore=chapter===1&&['play','heartbeat','trap','keypad'].includes(state)&&!P.dead&&!P.won;
+ let near=0;if(inStore){const d=Math.hypot(P.pos.x-B.pos.x,P.pos.z-B.pos.z);near=B.chase||state==='heartbeat'?1:Math.max(0,Math.min(1,1-(d-12)/45))}
+ const want={'lobby':state==='lobby'?.9:0,'store-calm':inStore?(1-near)*.9:0,'store-close':inStore?near*1.1:0};
+ for(const k in MUSIC.gain)MUSIC.gain[k].gain.setTargetAtTime(want[k],now,.5)}
+setInterval(musTick,120);
 // ---------------- input ----------------
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur()}if(state==='heartbeat'&&!e.repeat&&(e.code==='KeyA'||e.code==='ArrowLeft')){hbPress(-1);return}if(state==='heartbeat'&&!e.repeat&&(e.code==='KeyD'||e.code==='ArrowRight')){hbPress(1);return}if(e.code==='KeyE')interact();if(e.code==='Escape'&&state==='keypad')closeKeypad()});
 addEventListener('keyup',e=>keys[e.code]=false);
