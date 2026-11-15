@@ -295,7 +295,7 @@ function stepHeartbeat(dt){if(!hb)return;hb.t+=dt;hb.lock=Math.max(0,hb.lock-dt)
  if(hb.msg){hx.textAlign='center';hx.font="900 28px 'Arial Black'";hx.fillStyle=hb.msg==='GOOD'?'#3aff6a':'#ff4050';hx.fillText(hb.msg,CX,285)}}
 function hbEnd(){$('hb').classList.add('hide');hb.c.door.position.x=0;const c=hb.c;hb=null;return c}
 function hbWin(){hbEnd();state='play';toast('...he gave up and walked away.',2600);SFX.good();
- B.wait=0;B.mode='wander';B.closet=null;let p;do{p=randomPoint()}while(p.distanceTo(P.pos)<60);B.target=p}
+ B.wait=0;B.mode='wander';B.closet=null;let p;do{p=randomPoint()}while(p.distanceTo(P.pos)<60);B.target=p;B.leaving=3;P.safe=2.5}   /* he RUNS away, and you can't be caught for 2.5 seconds */
 // HEART ATTACK: you get thrown out of the closet, and he is right there
 function hbFail(){const c=hbEnd();state='play';c.door.rotation.y=-1.4;SFX.slam();SFX.heart(1.4);
  const a=$('angry');a.textContent='💔 HEART ATTACK!';a.style.opacity=1;setTimeout(()=>{a.style.opacity=0;a.textContent='BOOM! 8OTHY ANGERED!'},1800);
@@ -478,13 +478,14 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
   if(B.chase){B.target=new THREE.Vector3(P.pos.x,0,P.pos.z);B.mode='hunt'}else if(B.mode==='hunt')run.hunted=true;
   if(B.wait>0)B.wait-=dt;else{if(!B.target)B.target=randomPoint();const off=new THREE.Vector3(B.target.x-B.pos.x,0,B.target.z-B.pos.z);
    if(off.length()<1.5&&!B.chase&&!B.closet){if(B.mode==='hunt'){B.mode='wander';B.wait=1.5}B.target=randomPoint()}
-   else{const speed=B.chase?CHASE:(angryT>0?RUN*1.25:(B.mode==='hunt'?RUN:WALK));off.normalize();B.pos.addScaledVector(off,Math.min(speed*dt,off.length()+speed*dt));bothy.rotation.y=Math.atan2(off.x,off.z)}}
+   else{if(B.leaving>0)B.leaving-=dt;const speed=B.chase?CHASE:(angryT>0?RUN*1.25:(B.mode==='hunt'||B.leaving>0?RUN:WALK));off.normalize();B.pos.addScaledVector(off,Math.min(speed*dt,off.length()+speed*dt));bothy.rotation.y=Math.atan2(off.x,off.z)}}
   if(B.pos.z<-198&&!doorOpen)B.pos.z=-198;if(!B.chase&&B.pos.z<-198)B.pos.z=-198;
   bothy.position.copy(B.pos);bothy.position.y=Math.abs(Math.sin(now/120))*.25*(B.mode==='hunt'?1:.4);
   if(state==='play'&&P.hidden&&B.closet===P.hidden&&B.pos.distanceTo(closetFront(P.hidden))<2.5)startHeartbeat(P.hidden);
   if(B.closet&&!P.hidden&&state==='play')B.closet=null;   // you got out before he arrived
   const dist=Math.hypot(P.pos.x-B.pos.x,P.pos.z-B.pos.z);
-  if(dist<4.5&&!P.hidden)die(P.trap?'8OTHY heard you banging in the trap closet...':(B.chase?'He caught you in the hallway. Run, and crouch through the crack!':'8OTHY heard your footsteps. Hold SHIFT to crouch and stay quiet!'));
+  if(P.safe>0)P.safe-=dt;
+  if(dist<4.5&&!P.hidden&&!(P.safe>0))die(P.trap?'8OTHY heard you banging in the trap closet...':(B.chase?'He caught you in the hallway. Run, and crouch through the crack!':'8OTHY heard your footsteps. Hold SHIFT to crouch and stay quiet!'));
   // heartbeat + growl when he is close
   const close=Math.max(0,1-dist/45);if(A){A.growl.gain.value=(B.mode==='hunt'?.18:.06)*close}heartT-=dt;if(close>.3&&heartT<=0){SFX.heart(close);heartT=1.1-close*.7}
   $('heart').style.boxShadow='inset 0 0 160px 40px rgba(255,0,20,'+(close*.55)+')';
