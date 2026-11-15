@@ -785,7 +785,8 @@ CH[6]={build(){const C=this;C.S=6000;C.N=9;C.cs=14;C.meshes=[];C.walls=[];C.ray=
 // Brick Smash, Space Dodge and Jumpitry. Lose ONE game... and 8OTHY gets you.
 // Unlocked only with every achievement except 8OVERSE.
 function ch7Missing(){return ACH.filter(a=>a.id!=='8overse'&&a.id!=='ch7'&&!SAVE.earned[a.id])}
-function ch7Ready(){return !ch7Missing().length}
+const CH7_LOCK=false;   /* FiverFlow: "for now I can play it" - flip to true to bring back the all-achievements lock */
+function ch7Ready(){return !CH7_LOCK||!ch7Missing().length}
 CH[7]={NAMES:{brick:'🧱 Brick Smash',space:'🚀 Space Dodge',jump:'🟡 Jumpitry'},
  build(){const C=this;C.frame=document.createElement('iframe');C.frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:24;display:none;background:#000';C.frame.allow='autoplay; microphone; fullscreen';document.body.appendChild(C.frame);
   C.bar=document.createElement('div');C.bar.style.cssText='position:fixed;right:12px;top:12px;z-index:26;display:none;gap:8px;align-items:center;background:rgba(20,4,8,.85);border:2px solid #ff2235;border-radius:12px;padding:8px 12px;font-family:system-ui;font-size:16px;color:#fff';document.body.appendChild(C.bar);
