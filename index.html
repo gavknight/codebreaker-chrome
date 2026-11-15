@@ -350,7 +350,9 @@ function win(){if(P.won)return;P.won=true;state='won';{const secs=(performance.n
  setTimeout(()=>f.textContent='The end...  Or is it?',2500);setTimeout(()=>{f.style.opacity=0;f.style.pointerEvents='none';goLobby()},6500)}
 // ---------------- dying ----------------
 const sc=$('scare'),sx=sc.getContext('2d');
-function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';if(!freeMode){SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths')}$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();jumpscareSound();
+let freeSaveT=0;
+function die(why){if(P.dead||P.won)return;
+ if(freeMode){if(performance.now()-freeSaveT>2500){freeSaveT=performance.now();toast("🆓 FREE MODE: you can't die!",1600)}if(!P.won)$('revive').onclick();return}   // FiverFlow: in Free Mode you CAN'T dieP.dead=true;state='dead';if(!freeMode){SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths')}$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();jumpscareSound();
  /* Gavin's jumpscare: 8OTHY's head fills the screen, it opens into a GIANT round mouth over 2 seconds, then he PULLS YOU IN */
  (function jump(){const tt=(performance.now()-t0)/1000,W=sc.width,H=sc.height,base=Math.min(W,H)*.42;
   if(tt>2.75){sc.style.display='none';if(state==='dead'){$('deadTip').textContent=why;$('dead').classList.remove('hide')}return}
@@ -419,7 +421,7 @@ let bannerQ=[],bannerOn=false;
 // ---------------- FREE MODE (FiverFlow): practice that doesn't count toward progress ----------------
 let freeMode=false;try{freeMode=localStorage.getItem('cb_free')==='1'}catch(e){}
 function drawFree(){$('freeBtn').classList.toggle('on',freeMode);$('freeBtn').innerHTML='FREE<br>MODE<br>'+(freeMode?'ON':'OFF');$('freeTag').style.display=freeMode?'block':'none'}
-$('freeBtn').onclick=()=>{freeMode=!freeMode;try{localStorage.setItem('cb_free',freeMode?'1':'0')}catch(e){}drawFree();toast(freeMode?'FREE MODE ON: practice! Nothing counts.':'FREE MODE OFF: everything counts again.',2600)};
+$('freeBtn').onclick=()=>{freeMode=!freeMode;try{localStorage.setItem('cb_free',freeMode?'1':'0')}catch(e){}drawFree();toast(freeMode?"FREE MODE ON: you can't die, and nothing counts.":'FREE MODE OFF: everything counts again.',2600)};
 drawFree();
 function showBanner(){if(bannerOn||!bannerQ.length)return;const a=bannerQ.shift();bannerOn=true;$('bName').textContent=a.name;$('bDesc').textContent=a.desc.replace(/ \(.*\)$/,'');$('banner').style.top='18px';SFX.good();
  setTimeout(()=>{$('banner').style.top='-140px';setTimeout(()=>{bannerOn=false;showBanner()},600)},4000)}
