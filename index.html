@@ -216,6 +216,7 @@ const glow8=new THREE.PointLight(0xff1020,1.1,22);glow8.position.set(0,8,0);both
 const B={pos:new THREE.Vector3(0,0,-185),target:null,mode:'wander',wait:0,chase:false};
 const WALK=8,RUN=14,CHASE=15;
 const randomPoint=()=>new THREE.Vector3(R(-50,50),0,R(-190,-15));
+function farPoint(){let p,k=0;do{p=randomPoint()}while(p.distanceTo(P.pos)<70&&++k<40);return p}   // a random spot at least 70 studs away from you
 function makeNoise(p,why){if(B.chase)return;B.closet=null;B.mode='hunt';B.target=new THREE.Vector3(p.x,0,p.z);B.wait=0}
 // ---------------- the player ----------------
 const P={pos:new THREE.Vector3(0,0,-8),vel:new THREE.Vector3(),yaw:0,pitch:0,crouch:false,ground:true,hidden:null,trap:null,dead:false,alive:false,inEnding:false,won:false};
@@ -419,7 +420,7 @@ function jumpscareSound(){if(!A)return;const t=A.currentTime;
  setTimeout(()=>{SFX.slam();SFX.scream()},2550)}                                                                                                   // CHOMP
 $('revive').onclick=()=>{$('dead').classList.add('hide');P.dead=false;state='play';P.hp=100;drawHp();angryT=0;minis.forEach(mi=>scene.remove(mi.m));minis.length=0;P.hidden=null;P.trap=null;$('slats').style.display='none';if(chapter!==1){CH[chapter].revive();renderer.domElement.requestPointerLock();return}
  // revive where you died, but 8OTHY gets sent away so you are not caught again instantly
- B.pos.copy(B.chase?new THREE.Vector3(0,0,-185):randomPoint());if(!B.chase){B.mode='wander';B.target=randomPoint()}renderer.domElement.requestPointerLock()};
+ B.pos.copy(B.chase?new THREE.Vector3(0,0,-185):farPoint());if(!B.chase){B.mode='wander';B.target=randomPoint()}P.safe=3;   /* FiverFlow found him 'teleporting' right in front of you: now he always goes FAR away */renderer.domElement.requestPointerLock()};
 $('restart').onclick=()=>{$('dead').classList.add('hide');chapter===1?startGame():startChapter(chapter)};
 // ---------------- ACHIEVEMENTS (the same 13 as the Roblox game, saved in this browser) ----------------
 const ACH=[
