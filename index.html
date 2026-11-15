@@ -32,6 +32,8 @@ canvas{display:block}
 #hb{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:16;text-align:center;background:rgba(0,0,0,.55);padding:18px 24px;border-radius:22px}#hb canvas{width:min(1100px,94vw);height:auto}#hbc{background:rgba(10,0,2,.85);border:3px solid #ff2235;border-radius:16px}
 #lobbyUI{position:fixed;inset:0;z-index:6;pointer-events:none}
 #trophy{position:absolute;left:18px;top:50%;width:96px;height:96px;margin-top:-48px;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 0 10px #ffb000);transition:transform .1s}#trophy:hover{transform:scale(1.08)}
+#freeBtn{position:absolute;left:18px;top:calc(50% + 62px);width:96px;height:96px;border-radius:50%;border:4px solid #555;background:#1a1a1e;color:#aaa;font:900 17px 'Arial Black';pointer-events:auto;cursor:pointer;line-height:1.1}#freeBtn:hover{transform:scale(1.08)}#freeBtn.on{border-color:#3aff6a;color:#3aff6a;box-shadow:0 0 14px #3aff6a}
+#freeTag{position:absolute;right:20px;top:18px;font-size:18px;color:#3aff6a;text-shadow:2px 2px 0 #000;display:none}
 #lobbyHint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-family:system-ui;font-size:16px;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:10px;white-space:nowrap}
 #count{position:absolute;left:50%;top:30%;transform:translateX(-50%);font-size:90px;color:#3aff6a;text-shadow:0 0 30px #3aff6a;display:none}
 #achWin{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,94vw);max-height:80vh;z-index:18;background:#140a0e;border:3px solid #ffd23b;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
@@ -49,7 +51,7 @@ canvas{display:block}
 #talk{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:27;max-width:80vw;background:rgba(0,0,0,.82);border:2px solid #555;border-radius:12px;padding:12px 22px;font-family:system-ui;font-size:26px;display:none;text-align:center}#talk b{color:#ffd23b}
 #fade{position:fixed;inset:0;z-index:25;background:#000;opacity:0;pointer-events:none;transition:opacity 1.2s;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8vw;font-size:min(60px,5vw);color:#ff2235;text-shadow:0 0 30px #f00}
 </style></head><body>
-<div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="obj"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div><div id="hpWrap"><b>❤️ HEALTH <span id="hpNum">100</span></b><div id="hpBar"><div id="hpFill"></div></div></div><div id="slap">SLAP!</div><div id="angry">BOOM! 8OTHY ANGERED!</div></div>
+<div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="freeTag">🆓 FREE MODE</div><div id="obj"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div><div id="hpWrap"><b>❤️ HEALTH <span id="hpNum">100</span></b><div id="hpBar"><div id="hpFill"></div></div></div><div id="slap">SLAP!</div><div id="angry">BOOM! 8OTHY ANGERED!</div></div>
 <div id="slats"></div>
 <div id="menu" class="screen"><h1>CODEBREAKER</h1><h2>[HORROR]</h2><p style="color:#ffd23b;font-family:'Arial Black'">CHAPTERS 1 - 6</p>
  <p>You're trapped in the Giga Cookie Store. Find the clue cookies, crack the code and escape.<br><b>8OTHY hunts by SOUND.</b></p>
@@ -62,7 +64,7 @@ canvas{display:block}
 <div id="trap" class="hide"><div class="panel" style="background:#2a0006;border-color:#ff2235"><h2 style="margin:0 0 6px">IT'S A TRAP!</h2><p style="font-family:system-ui;margin:0 0 14px">Click PUSH <b id="pushLeft">50</b> times!</p><button id="push">PUSH!</button></div></div>
 <div id="hb" class="hide"><div style="font-size:30px;color:#ff4050;text-shadow:0 0 20px #f00;margin-bottom:8px">HE'S AT THE DOOR... STAY CALM</div><canvas id="hbc" width="820" height="300"></canvas>
  <div style="font-family:system-ui;font-size:18px;margin-top:8px"><b style="color:#ff7a9a">LEFT CLICK</b> for hearts from the left · <b style="color:#7ac8ff">RIGHT CLICK</b> for hearts from the right — when they reach the middle!</div></div>
-<div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><div id="count"></div>
+<div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><button id="freeBtn" title="Free Mode: practice, nothing counts">FREE<br>MODE<br>OFF</button><div id="count"></div>
  <div id="lobbyHint">WASD walk · <b>hold RIGHT-CLICK + drag</b> to turn the camera · stand on a <b>CHAPTER</b> pad to play</div></div>
 <div id="achWin" class="hide"><h2>🏆 ACHIEVEMENTS</h2><div id="achList"></div><button id="achClose">✖ CLOSE</button></div>
 <div id="banner"><img src="achievements-icon.png"><div><div class="a">ACHIEVEMENT UNLOCKED!</div><div class="b" id="bName"></div><div class="c" id="bDesc"></div></div></div>
@@ -336,7 +338,7 @@ function win(){if(P.won)return;P.won=true;state='won';{const secs=(performance.n
  setTimeout(()=>f.textContent='The end...  Or is it?',2500);setTimeout(()=>{f.style.opacity=0;f.style.pointerEvents='none';goLobby()},6500)}
 // ---------------- dying ----------------
 const sc=$('scare'),sx=sc.getContext('2d');
-function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths');$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();jumpscareSound();
+function die(why){if(P.dead||P.won)return;P.dead=true;state='dead';if(!freeMode){SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths')}$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();jumpscareSound();
  /* Gavin's jumpscare: 8OTHY's head fills the screen, it opens into a GIANT round mouth over 2 seconds, then he PULLS YOU IN */
  (function jump(){const tt=(performance.now()-t0)/1000,W=sc.width,H=sc.height,base=Math.min(W,H)*.42;
   if(tt>2.75){sc.style.display='none';if(state==='dead'){$('deadTip').textContent=why;$('dead').classList.remove('hide')}return}
@@ -393,10 +395,15 @@ let SAVE;try{SAVE=JSON.parse(localStorage.getItem('cb_save'))}catch(e){}SAVE=Obj
 const saveGame=()=>{try{localStorage.setItem('cb_save',JSON.stringify(SAVE))}catch(e){}};
 const run={start:0,hunted:false};
 let bannerQ=[],bannerOn=false;
+// ---------------- FREE MODE (FiverFlow): practice that doesn't count toward progress ----------------
+let freeMode=false;try{freeMode=localStorage.getItem('cb_free')==='1'}catch(e){}
+function drawFree(){$('freeBtn').classList.toggle('on',freeMode);$('freeBtn').innerHTML='FREE<br>MODE<br>'+(freeMode?'ON':'OFF');$('freeTag').style.display=freeMode?'block':'none'}
+$('freeBtn').onclick=()=>{freeMode=!freeMode;try{localStorage.setItem('cb_free',freeMode?'1':'0')}catch(e){}drawFree();toast(freeMode?'FREE MODE ON: practice! Nothing counts.':'FREE MODE OFF: everything counts again.',2600)};
+drawFree();
 function showBanner(){if(bannerOn||!bannerQ.length)return;const a=bannerQ.shift();bannerOn=true;$('bName').textContent=a.name;$('bDesc').textContent=a.desc.replace(/ \(.*\)$/,'');$('banner').style.top='18px';SFX.good();
  setTimeout(()=>{$('banner').style.top='-140px';setTimeout(()=>{bannerOn=false;showBanner()},600)},4000)}
-function earn(id){if(SAVE.earned[id])return;SAVE.earned[id]=true;setTimeout(checkPlush,4600);if(!SAVE.equipped)SAVE.equipped=id;saveGame();bannerQ.push(ACH.find(a=>a.id===id));showBanner();drawTitle();drawAch()}
-function beatChapter(n){earn('ch'+n);SAVE.best=Math.max(SAVE.best,n);SAVE.streak[n]=true;saveGame();if(Object.keys(SAVE.streak).length>=6)earn('8overse');drawTitle()}
+function earn(id){if(freeMode)return;if(SAVE.earned[id])return;SAVE.earned[id]=true;setTimeout(checkPlush,4600);if(!SAVE.equipped)SAVE.equipped=id;saveGame();bannerQ.push(ACH.find(a=>a.id===id));showBanner();drawTitle();drawAch()}
+function beatChapter(n){if(freeMode)return;earn('ch'+n);SAVE.best=Math.max(SAVE.best,n);SAVE.streak[n]=true;saveGame();if(Object.keys(SAVE.streak).length>=6)earn('8overse');drawTitle()}
 function drawAch(){const prog={'8overse':Object.keys(SAVE.streak).length,deaths:SAVE.deaths};
  $('achList').innerHTML=ACH.map(a=>{const got=SAVE.earned[a.id],p=prog[a.id];return '<div class="ach '+(got?'got':'lock')+'"><img src="achievements-icon.png"><div class="t"><div class="n">'+(got?'':'🔒 ')+a.name+'</div><div class="d">'+a.desc+(!got&&a.need&&p!=null?' ('+p+'/'+a.need+')':'')+'</div></div>'+
   (got?'<button data-eq="'+a.id+'" class="'+(SAVE.equipped===a.id?'on':'')+'">'+(SAVE.equipped===a.id?'EQUIPPED ✓':'EQUIP')+'</button>':'')+'</div>'}).join('');
@@ -1005,5 +1012,5 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  viewPlush.visible=!!P.holdPlush&&hasPlush()&&!P.dead&&!P.hidden&&state!=='lobby';if(viewPlush.visible)viewPlush.rotation.z=Math.sin(now/400)*.06;
  renderer.render(scene,camera)}
 requestAnimationFrame(loop);
-me.visible=false;checkPlush();window.CB={snapCookie,hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
+me.visible=false;checkPlush();window.CB={get freeMode(){return freeMode},set freeMode(v){freeMode=v;drawFree()},snapCookie,hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
 </script></body></html>
