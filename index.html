@@ -51,7 +51,7 @@ canvas{display:block}
 </style></head><body>
 <div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="obj"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div><div id="hpWrap"><b>❤️ HEALTH <span id="hpNum">100</span></b><div id="hpBar"><div id="hpFill"></div></div></div><div id="slap">SLAP!</div><div id="angry">BOOM! 8OTHY ANGERED!</div></div>
 <div id="slats"></div>
-<div id="menu" class="screen"><h1>CODEBREAKER</h1><h2>[HORROR]</h2><p style="color:#ffd23b;font-family:'Arial Black'">CHAPTERS 1 - 4</p>
+<div id="menu" class="screen"><h1>CODEBREAKER</h1><h2>[HORROR]</h2><p style="color:#ffd23b;font-family:'Arial Black'">CHAPTERS 1 - 6</p>
  <p>You're trapped in the Giga Cookie Store. Find the clue cookies, crack the code and escape.<br><b>8OTHY hunts by SOUND.</b></p>
  <button class="btn" id="play">▶ PLAY</button>
  <p style="font-size:15px">WASD move · Mouse look · <b>Hold SHIFT to crouch (quiet)</b> · Space jump · <b>E / Click</b> to use · Esc pause</p>
@@ -236,7 +236,7 @@ $('resume').onclick=()=>{$('paused').classList.add('hide');state='play';renderer
 // ---------------- using things (E / click) ----------------
 const ray=new THREE.Raycaster();let looking=null;
 function lookTarget(){ray.setFromCamera({x:0,y:0},camera);ray.far=11;const hit=ray.intersectObjects(clickables,false)[0];return hit?hit.object:null}
-function interact(){if(state!=='play')return;audio();
+function interact(){if(state!=='play')return;audio();if(chapter!==1&&CH[chapter].useKey&&CH[chapter].useKey())return;
  if(P.hidden){leaveCloset();return}if(P.trap)return;
  const o=looking;if(!o)return;const u=o.userData;if(u.act){u.act(o);return}
  if(u.kind==='clue'){const k=u.k;let sym,num;if(k<4){sym=SYMBOLS[k];num=digits[k]}else{sym=FAKE[k-4];num=RI(0,9)}
@@ -359,8 +359,8 @@ const ACH=[
  {id:'ch2',name:'THE PHONE GUY',desc:'Beat Chapter 2'},
  {id:'ch3',name:'NOT A REAL BABY',desc:'Beat Chapter 3'},
  {id:'ch4',name:"THE MIMIC'S LAIR",desc:'Beat Chapter 4'},
- {id:'ch5',name:'ENDLESS DOORS',desc:'Beat Chapter 5 (coming to Chrome soon)'},
- {id:'ch6',name:'GOING DOWN',desc:'Beat Chapter 6 (coming to Chrome soon)'},
+ {id:'ch5',name:'ENDLESS DOORS',desc:'Beat Chapter 5'},
+ {id:'ch6',name:'GOING DOWN',desc:'Beat Chapter 6'},
  {id:'silent',name:'SILENT STEPS',desc:'Beat Chapter 1 without 8OTHY ever hunting you'},
  {id:'closet',name:'CLOSET KING',desc:'Escape a trap closet (all 50 pushes!)'},
  {id:'anomaly',name:'ANOMALY EYES',desc:'Get 3 anomalies right with NO wrong guesses (Chapter 2)'},
@@ -390,8 +390,8 @@ function paint(sp,lines){const{cv,tex,w,h}=sp.userData,x=cv.getContext('2d');x.c
  lines.forEach(([t,size,col,y])=>{x.font='900 '+size+'px Arial Black';x.lineWidth=size*.18;x.strokeStyle='#000';x.strokeText(t,w/2,y);x.fillStyle=col;x.fillText(t,w/2,y)});tex.needsUpdate=true}
 const sign=textSprite();sign.scale.set(34,8.5,1);sign.position.set(L.x,11,L.z-21);scene.add(sign);paint(sign,[['CODEBREAKER',130,'#ff3045',130],['[HORROR]',70,'#ffffff',225]]);
 // one pad per chapter: stand on it for 3 seconds
-const PADS=[[1,'THE WRONG STORE',0x3aff6a,'#3aff6a'],[2,'THE PHONE GUY',0xb050ff,'#c88aff'],[3,'NOT A REAL BABY',0xff9a2a,'#ffb35a'],[4,"THE MIMIC'S LAIR",0xff2a3a,'#ff5a6a']].map(([n,name,hex,css],i)=>{
- const m=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.4,32),new THREE.MeshBasicMaterial({color:hex}));m.position.set(L.x-24+i*16,.2,L.z-10);scene.add(m);
+const PADS=[[1,'THE WRONG STORE',0x3aff6a,'#3aff6a'],[2,'THE PHONE GUY',0xb050ff,'#c88aff'],[3,'NOT A REAL BABY',0xff9a2a,'#ffb35a'],[4,"THE MIMIC'S LAIR",0xff2a3a,'#ff5a6a'],[5,'ENDLESS DOORS',0x3ac8ff,'#7ad8ff'],[6,'GOING DOWN',0x6aff3a,'#9aff7a']].map(([n,name,hex,css],i)=>{
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.4,32),new THREE.MeshBasicMaterial({color:hex}));m.position.set(i<4?L.x-24+i*16:L.x-8+(i-4)*16,.2,i<4?L.z-10:L.z+2);scene.add(m);
  const lab=textSprite();lab.scale.set(12,3,1);lab.position.set(m.position.x,4.5,m.position.z);scene.add(lab);paint(lab,[['CHAPTER '+n,105,css,110],[name,52,'#ffffff',205]]);return{n,m,hex}});
 const startPad=PADS[0].m;
 // you, as a blocky character (only seen in the lobby)
@@ -484,7 +484,7 @@ function room(x0,x1,z0,z1,h,fc,wc,gap){const w=x1-x0,d=z1-z0,cx=(x0+x1)/2,cz=(z0
  box(1,h,d,W,x0-.5,h/2,cz);box(1,h,d,W,x1+.5,h/2,cz);box(w+2,h,1,W,cx,h/2,z0-.5);
  if(gap){const a=gap[0]-x0,b=x1-gap[1];if(a>0)box(a,h,1,W,x0+a/2,h/2,z1+.5);if(b>0)box(b,h,1,W,gap[1]+b/2,h/2,z1+.5)}else box(w+2,h,1,W,cx,h/2,z1+.5)}
 function chLight(n,c,i,dist,x,y,z){const l=new THREE.PointLight(c,i,dist,1.4);l.position.set(x,y,z);scene.add(l);(CH[n].lights=CH[n].lights||[]).push(l);return l}
-function chLights(n){[2,3,4].forEach(k=>CH[k]&&(CH[k].lights||[]).forEach(l=>l.visible=k===n))}
+function chLights(n){[2,3,4,5,6].forEach(k=>CH[k]&&(CH[k].lights||[]).forEach(l=>l.visible=k===n))}
 function letterMat(t,bg,fg){const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d');x.fillStyle=bg;x.fillRect(0,0,64,64);x.fillStyle=fg;x.font='900 48px Arial Black';x.textAlign='center';x.textBaseline='middle';x.fillText(t,32,35);return new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)})}
 // ================= CHAPTER 2: THE PHONE GUY (Fullyty Home) =================
 CH[2]={build(){const H=2000,C=this;
@@ -593,6 +593,191 @@ CH[2]={build(){const H=2000,C=this;
   if(C.phase==='anom'||C.phase==='pick'){if(Math.random()<dt*.15)SFX.heart(.5)}},
  leave(){const C=this;if(C.cur)C.cur.u();C.cur=null;C.clearPicks&&C.clearPicks();chLights(0);AMB.intensity=.55;scene.fog.far=95}};
 addEventListener('keydown',e=>{if(e.code==='KeyO'&&state==='play'&&chapter===2)CH[2].pressO()});
+// ================= CHAPTER 5: THE ENDLESS DOORS TO VICTORY =================
+// You're home. Your bedroom door slams shut behind you... and there are 250 doors ahead.
+// EYFE (FiverFlow's drawing: EVERYTHING is made of eyes): he only sees you in the LIGHT, he gets way faster
+// if you LOOK at him, staring contests, EYE DOORS wake him up, and BRIGHT rooms are a trap.
+// Door 250 -> the Mimic's warehouse: 25 power switches, the power box, the colour puzzle, then drive away.
+function eyeTex(){const cv=document.createElement('canvas');cv.width=128;cv.height=256;const x=cv.getContext('2d');x.fillStyle='#3a2018';x.fillRect(0,0,128,256);
+ for(let i=0;i<26;i++){const px=R(10,118),py=R(10,246),r=R(7,15);x.fillStyle='#f4f0e8';x.beginPath();x.ellipse(px,py,r,r*.7,0,0,7);x.fill();x.fillStyle='#c81020';x.beginPath();x.arc(px,py,r*.45,0,7);x.fill();x.fillStyle='#000';x.beginPath();x.arc(px,py,r*.2,0,7);x.fill()}
+ return new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv)})}
+function makeEyfe(){const g=new THREE.Group(),white=new THREE.MeshLambertMaterial({color:0xf4f0e8,emissive:0x302828}),iris=new THREE.MeshBasicMaterial({color:0xc81020}),pup=new THREE.MeshBasicMaterial({color:0x000000});
+ const eye=(x,y,z,r)=>{const e=new THREE.Group();const b=new THREE.Mesh(new THREE.SphereGeometry(r,12,10),white);const i=new THREE.Mesh(new THREE.SphereGeometry(r*.5,10,8),iris);i.position.z=r*.62;const p=new THREE.Mesh(new THREE.SphereGeometry(r*.25,8,6),pup);p.position.z=r*.86;e.add(b,i,p);e.position.set(x,y,z);g.add(e)};
+ for(let i=0;i<9;i++){const a=i/9*Math.PI*2;eye(Math.cos(a)*1.1,9.4+Math.sin(a)*1.1,.2,.55)}eye(0,9.4,.5,.8);                 // head: a ring of eyes round one big one
+ for(let y=4.6;y<=8;y+=.9)for(const x of[-.55,.55])eye(x,y,0,.5);                                                         // body
+ for(const sx of[-1,1]){for(let k=1;k<=4;k++)eye(sx*(1+k*.75),7.8-k*.35,0,.42);for(let y=.5;y<=4;y+=.85)eye(sx*.6,y,0,.45)}  // arms and legs
+ scene.add(g);return g}
+CH[5]={build(){const C=this;C.X=5000;C.rooms=new Map();C.eyfe=makeEyfe();C.eyfe.visible=false;C.eyeM=eyeTex();C.wallM=M(0x5a4636);C.floorM=M(0x3a2a20);C.doorM=M(0x6a4428);C.bright=new THREE.MeshBasicMaterial({color:0xfffbe8});
+ // ---- the finale warehouse (door 250) ----
+ const W=5400,C2=C;C.W=W;C.whWalls=[];const ww=(w,h,d,c,x,y,z)=>{const m=box(w,h,d,M(c),x,y,z);C.whWalls.push(m);return m};
+ box(84,1,84,M(0x4a4a50),W,-.5,-40,false);box(84,1,84,M(0x1a1a1e),W,16.5,-40,false);
+ ww(1,16,80,0x6a6a72,W-40.5,8,-40);ww(1,16,80,0x6a6a72,W+40.5,8,-40);ww(82,16,1,0x6a6a72,W,8,.5);ww(39,16,1,0x6a6a72,W-21.5,8,-80.5);ww(39,16,1,0x6a6a72,W+21.5,8,-80.5);
+ C.ctrlDoor=box(4,10,1,M(0x8a2a2a),W,5,-80.5);
+ [[-25,-20],[-10,-35],[12,-15],[28,-30],[-28,-55],[-5,-60],[18,-52],[30,-68],[-18,-70],[5,-8],[-32,-8],[24,-6]].forEach(([dx,dz])=>{const h=R(4,8);ww(R(5,8),h,R(5,8),0x8a6a3a,W+dx,h/2,dz)});
+ chLight(5,0xffe8c0,.8,70,W-15,14,-40);chLight(5,0xffe8c0,.8,70,W+15,14,-40);
+ C.power=box(3,4,1,M(0x3a3a40),W+12,5,-79.6,false);clickable(C.power,'Power box',()=>C.usePower());
+ C.switches=[];for(let i=0;i<25;i++){const sw=new THREE.Group();const base=new THREE.Mesh(new THREE.BoxGeometry(.8,.4,.8),M(0x333333));const lever=new THREE.Mesh(new THREE.BoxGeometry(.2,1.2,.2),new THREE.MeshLambertMaterial({color:0xffd23b,emissive:0x4a3a00}));lever.position.y=.7;lever.rotation.z=.4;sw.add(base,lever);
+  const hit=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.8,1.6),new THREE.MeshBasicMaterial({visible:false}));hit.position.y=.8;sw.add(hit);scene.add(sw);sw.userData.hit=hit;C.switches.push(sw)}
+ // control room behind the red door: the colour puzzle and the getaway car
+ box(22,1,22,M(0x2a2a30),W,-.5,-91,false);box(22,1,22,M(0x1a1a1e),W,12.5,-91,false);box(1,12,20,M(0x5a5a62),W-10.5,6,-91);box(1,12,20,M(0x5a5a62),W+10.5,6,-91);
+ C.garage=box(20,12,1,M(0x7a7a80),W,6,-101.5);chLight(5,0xffffff,.9,30,W,11,-91);
+ const sc=document.createElement('canvas');sc.width=256;sc.height=128;C.scr={cv:sc,x:sc.getContext('2d'),tex:new THREE.CanvasTexture(sc)};
+ C.screen=new THREE.Mesh(new THREE.PlaneGeometry(8,4),new THREE.MeshBasicMaterial({map:C.scr.tex}));C.screen.position.set(W-10,7,-91);C.screen.rotation.y=Math.PI/2;scene.add(C.screen);
+ C.COLS=[['RED',0xff2a3a,'#ff2a3a'],['BLUE',0x2a7aff,'#2a7aff'],['GREEN',0x3aff6a,'#3aff6a'],['YELLOW',0xffd23b,'#ffd23b']];
+ C.pads=C.COLS.map(([n,hex],i)=>{const p=new THREE.Mesh(new THREE.BoxGeometry(4,.3,4),new THREE.MeshBasicMaterial({color:hex}));p.position.set(W-3+(i%2)*6,.15,-87-Math.floor(i/2)*6);scene.add(p);return p});
+ C.car=new THREE.Group();{const b=new THREE.Mesh(new THREE.BoxGeometry(6,3,10),M(0x2a2a2a));b.position.y=2;const t=new THREE.Mesh(new THREE.BoxGeometry(5,2,5),M(0x1a1a1a));t.position.set(0,4.2,1);const hl=new THREE.Mesh(new THREE.BoxGeometry(5,.6,.2),new THREE.MeshBasicMaterial({color:0xfff2a0}));hl.position.set(0,2.4,-5.1);C.car.add(b,t,hl)}
+ C.car.position.set(W,0,-108);scene.add(C.car);C.carHit=box(6,5,10,new THREE.MeshBasicMaterial({visible:false}),W,2.5,-108,false);
+ C.mimic=makeMimic();C.mimic.visible=false;C.ray=new THREE.Raycaster();C.roomL=chLight(5,0xfff0c0,1.3,34,0,8,0)},
+ // ---- the 250 doors are built a few at a time around you, so the game stays fast ----
+ roomType(k){return this.types[k]||'normal'},
+ makeRoom(k){const C=this,X=C.X,z0=-24*k,z1=-24*(k+1),g=new THREE.Group(),sol=[],cl=[],t=C.roomType(k),prev=C.roomType(k-1);scene.add(g);
+  const rb=(w,h,d,mat,x,y,z,solid)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);g.add(m);if(solid){const b={m,x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y1:y+h/2};solids.push(b);sol.push(b)}return m};
+  rb(16,1,24,C.floorM,X,-.5,(z0+z1)/2);rb(18,1,24,M(0x1a1410),X,10.5,(z0+z1)/2);rb(1,10,24,C.wallM,X-8.5,5,(z0+z1)/2,true);rb(1,10,24,C.wallM,X+8.5,5,(z0+z1)/2,true);
+  if(k===0){rb(16,10,1,C.wallM,X,5,.5,true);const bed=rb(6,2,9,M(0x3a5aa0),X+4,1,-8,true);rb(6,1,2.5,M(0xffffff),X+4,2.4,-4.5)}
+  const lamp=rb(3,.4,3,new THREE.MeshBasicMaterial({color:0xfff0c0}),X,9.8,(z0+z1)/2);
+  const swt=rb(.3,1,.7,M(0xe0e0e0),X-7.9,4.5,(z0+z1)/2+4);swt.userData={label:'Flip the light switch',act:()=>{C.lit[k]=!C.lit[k];SFX.beep();toast(C.lit[k]?'Lights ON':'Lights OFF... EYFE can\'t see you in the dark')}};clickables.push(swt);cl.push(swt);
+  // the room behind a CHOICE: one side is a dead-end BRIGHT room. Never go in there.
+  if(prev==='choice'){rb(1,10,8,C.wallM,X,5,z0-4,true);const bad=C.bad[k-1],bx=X+bad*4;rb(7.5,10,1,C.bright,bx,5,z0-8.5,true);rb(7.5,.2,8,C.bright,bx,.05,z0-4);rb(.2,10,8,C.bright,X+bad*7.9,5,z0-4)}
+  // the far wall, with one door (or two doors on a choice room)
+  const doors=[];const mkDoor=(x,eye)=>{const d=rb(3.6,8,.4,eye?C.eyeM:C.doorM,x,4,z1,true);doors.push({m:d,b:sol[sol.length-1],x,open:false,eye})};
+  if(t==='choice'){rb(2.2,10,1,C.wallM,X-6.9,5,z1,true);rb(4.4,10,1,C.wallM,X,5,z1,true);rb(2.2,10,1,C.wallM,X+6.9,5,z1,true);rb(16,2,1,C.wallM,X,9,z1);mkDoor(X-4);mkDoor(X+4);
+   const bad=C.bad[k];rb(3.6,.06,2.4,C.bright,X+bad*4,.04,z1+1.4)}   // the clue: bright light shining under the BAD door
+  else{rb(6.2,10,1,C.wallM,X-4.9,5,z1,true);rb(6.2,10,1,C.wallM,X+4.9,5,z1,true);rb(4,2,1,C.wallM,X,9,z1);mkDoor(X,t==='eye')}
+  const sg=textSprite();sg.material.depthTest=true;sg.scale.set(5,1.25,1);sg.position.set(X,9.2,z1+.6);g.add(sg);paint(sg,[[String(k+1).padStart(4,'0'),170,t==='eye'?'#ff4050':'#ffd23b',180]]);
+  return{k,g,sol,cl,lamp,doors}},
+ killRoom(r){r.sol.forEach(b=>{const i=solids.indexOf(b);if(i>=0)solids.splice(i,1)});r.cl.forEach(unclick);scene.remove(r.g);this.rooms.delete(r.k)},
+ start(){const C=this;chLights(5);AMB.intensity=.6;scene.fog.far=90;[...C.rooms.values()].forEach(r=>C.killRoom(r));
+  C.types=[];C.bad=[];for(let k=0;k<250;k++){let t='normal';if(k>=2){const r=Math.random();t=r<.13?'eye':r<.26&&C.types[k-1]!=='choice'?'choice':r<.38?'dark':r<.45?'stare':'normal'}C.types[k]=t;C.bad[k]=Math.random()<.5?-1:1}
+  C.lit=C.types.map(t=>t!=='dark');Object.assign(C,{phase:'doors',cur:0,chase:null,stare:null,trapT:0,best:0,got:0,powered:false,seq:[],pstep:0,show:0,onPad:-1,sawStare:{}});C.eyfe.visible=false;C.mimic.visible=false;
+  // reset the warehouse
+  C.switches.forEach(sw=>{sw.visible=true;unclick(sw.userData.hit);clickable(sw.userData.hit,'Take power switch',()=>{sw.visible=false;unclick(sw.userData.hit);C.got++;SFX.good();toast('Power switch '+C.got+'/25');C.drawList()});
+   let x,z;do{x=C.W+R(-37,37);z=R(-77,-3)}while(solids.some(b=>x>b.x0-1&&x<b.x1+1&&z>b.z0-1&&z<b.z1+1));sw.position.set(x,0,z)});
+  if(!solidOf(C.ctrlDoor))solids.push({m:C.ctrlDoor,x0:C.W-2,x1:C.W+2,z0:-81,z1:-80,y1:10});C.ctrlDoor.position.y=5;if(!solidOf(C.garage))solids.push({m:C.garage,x0:C.W-10,x1:C.W+10,z0:-102,z1:-101,y1:12});C.garage.position.y=6;unclick(C.carHit);
+  C.drawScreen('');tp(C.X+3,-3,0);state='talk';blackout(true);
+  say([['','You made it home...'],['You','Finally. My own bed.'],['','*You open your bedroom door...*'],['','*SLAM!*']],()=>{blackout(false);state='play';SFX.slam();toast('250 doors... get through ALL of them!',3200);C.drawList()})},
+ drawList(){const C=this;if(C.phase==='doors'){setObj('🚪 Door '+Math.min(250,C.cur+1)+' / 250');setList('EYFE',"👁 He only sees you in the LIGHT<br>💡 Flip switches OFF to hide<br>🙈 DON'T look at him<br>👁 Eye doors wake him up<br>⚠️ Bright light under a door = TRAP")}
+  else if(C.phase==='ware'){setObj(C.got<25?'Find the power switches ('+C.got+'/25)':'Put them in the POWER BOX');setList('THE WAREHOUSE','⚡ Switches: '+C.got+'/25<br>🔌 Power box: '+(C.powered?'ON':'off')+'<br>🪚 The Mimic is in here...')}
+  else if(C.phase==='puzzle'){setObj('Watch the screen... then step on the colours in order');setList('CONTROL ROOM','Step '+C.pstep+'/'+C.seq.length)}},
+ drawScreen(txt,col){const{x,cv,tex}=this.scr;x.fillStyle=col||'#05140a';x.fillRect(0,0,256,128);x.fillStyle=col?'#000':'#3aff6a';x.font='900 30px Arial Black';x.textAlign='center';x.fillText(txt,128,76);tex.needsUpdate=true},
+ seen(){return this.lit[this.cur]&&!(P.pos.z>-24*this.cur-8&&this.roomType(this.cur-1)==='choice'&&Math.sign(P.pos.x-this.X)===this.bad[this.cur-1]&&false)},
+ looking(at){const f=new THREE.Vector3();camera.getWorldDirection(f);const to=new THREE.Vector3(at.x-camera.position.x,at.y+8-camera.position.y,at.z-camera.position.z).normalize();return f.dot(to)},
+ step(dt,now){const C=this,X=C.X;
+  if(C.phase==='doors'){
+   const cur=Math.max(0,Math.floor(-P.pos.z/24));if(cur!==C.cur){C.cur=cur;C.drawList()}
+   for(let k=cur-1;k<=cur+3;k++)if(k>=0&&k<250&&!C.rooms.has(k))C.rooms.set(k,C.makeRoom(k));
+   [...C.rooms.values()].forEach(r=>{if(r.k<cur-1||r.k>cur+3)C.killRoom(r)});
+   // lights: the room you are in decides how bright it is
+   const lit=C.lit[cur];C.roomL.position.set(X,8,-24*cur-12);C.roomL.intensity+=((lit?1.3:0)-C.roomL.intensity)*Math.min(1,dt*6);AMB.intensity+=((lit?.6:.05)-AMB.intensity)*Math.min(1,dt*6);C.rooms.forEach(r=>r.lamp.material.color.setHex(C.lit[r.k]?0xfff0c0:0x222222));
+   // doors open when you walk up to them, and SLAM shut behind you
+   C.rooms.forEach(r=>r.doors.forEach(d=>{const dz=P.pos.z-d.m.position.z;
+    if(!d.open&&dz>0&&dz<6&&Math.abs(P.pos.x-d.x)<5){d.open=true;d.m.position.y=12;const i=solids.indexOf(d.b);if(i>=0)solids.splice(i,1);SFX.door();
+     if(d.eye&&!C.chase){C.chase={pos:new THREE.Vector3(X,0,P.pos.z+45),lost:0};C.eyfe.visible=true;toast('👁 THE EYE DOOR WOKE EYFE UP! RUN!',2600);SFX.scream()}}
+    if(d.open&&dz<-5&&!d.slam&&!(C.chase)){d.slam=true;d.open=false;d.m.position.y=4;solids.push(d.b);SFX.slam()}}));
+   // the BRIGHT room trap
+   const pv=C.roomType(cur-1);if(pv==='choice'&&cur>0&&P.pos.z<-24*cur-.5&&P.pos.z>-24*cur-8&&Math.sign(P.pos.x-X)===C.bad[cur-1]&&!C.trapT){C.trapT=.001;C.eyfe.visible=true;C.eyfe.position.set(P.pos.x,0,P.pos.z-5);C.eyfe.rotation.y=0;toast('IT\'S BRIGHT IN HERE...',1500);SFX.scream()}
+   if(C.trapT>0){C.trapT+=dt;C.eyfe.position.z+=dt*20;if(C.trapT>.6){C.trapT=0;die('You walked into a BRIGHT room. EYFE sees EVERYTHING in the light...')}return}
+   // EYFE chasing you
+   if(C.chase){const e=C.chase,to=new THREE.Vector3(P.pos.x-e.pos.x,0,P.pos.z-e.pos.z),d=to.length(),look=C.looking(e.pos)>.6,see=C.lit[cur];
+    if(see)e.lost=0;else e.lost+=dt;const sp=look?24:9.5;e.pos.addScaledVector(to.normalize(),Math.min(d,sp*dt*(see?1:.4)));
+    C.eyfe.position.set(e.pos.x,Math.abs(Math.sin(now/100))*.3,e.pos.z);C.eyfe.rotation.y=Math.atan2(to.x,to.z);CH.growl=Math.max(0,1-d/40)*.2;
+    if(look&&!e.warned){e.warned=1;toast("DON'T LOOK AT HIM! He gets faster!",1500)}
+    if(d<3)return die('EYFE caught you. Never look back... and turn the lights off!');
+    if(e.lost>2.5||d>80){C.chase=null;C.eyfe.visible=false;CH.growl=0;toast(e.lost>2.5?'...EYFE lost you in the dark.':'You got away from EYFE!',2200)}}
+   // staring contest
+   else if(C.roomType(cur)==='stare'&&!C.sawStare[cur]){C.sawStare[cur]=1;C.stare={k:cur,t:0};C.eyfe.visible=true;C.eyfe.position.set(X+R(-4,4),0,-24*cur-14);C.eyfe.rotation.y=0;toast('👁 ...something is staring at you. LOOK AWAY.',2200)}
+   if(C.stare){const st=C.stare,d=P.pos.distanceTo(C.eyfe.position),look=C.looking(C.eyfe.position)>.85&&d<30;st.t=look?st.t+dt:Math.max(0,st.t-dt*.6);C.eyfe.lookAt(P.pos.x,0,P.pos.z);
+    $('heart').style.boxShadow='inset 0 0 200px 60px rgba(255,255,255,'+Math.min(.8,st.t*.55)+')';
+    if(st.t>1.5){C.stare=null;$('heart').style.boxShadow='none';return die('You lost the staring contest. EYFE\'s eyes filled your whole screen...')}
+    if(P.pos.z<C.eyfe.position.z-2||cur!==st.k){C.stare=null;C.eyfe.visible=false;$('heart').style.boxShadow='none'}}
+   // through door 250!
+   if(P.pos.z<-24*250+1){C.phase='cut';state='talk';C.chase=null;C.eyfe.visible=false;CH.growl=0;blackout(true,'DOOR 250...');setTimeout(()=>{if(chapter!==5)return;[...C.rooms.values()].forEach(r=>C.killRoom(r));
+    tp(C.W,-5,0);AMB.intensity=.5;C.roomL.intensity=0;blackout(false);say([['','A huge dark warehouse...'],['','*Something is scraping metal in the dark...*']],()=>{state='play';C.phase='ware';C.mimic.visible=true;C.mpos=new THREE.Vector3(C.W+R(-20,20),0,-70);C.mt=null;C.drawList()})},2000)}
+   return}
+  // ---- the warehouse: the Mimic hunts you by SIGHT ----
+  if(C.phase==='ware'||C.phase==='puzzle'){const m=C.mimic;m.userData.saws.forEach(sw=>sw.rotation.z+=dt*14);
+   if(C.phase==='ware'){const eye=new THREE.Vector3(C.mpos.x,8,C.mpos.z),me=new THREE.Vector3(P.pos.x,P.pos.y+3,P.pos.z),to=me.clone().sub(eye),d=to.length();let see=false;
+    if(d<40){C.ray.set(eye,to.clone().normalize());C.ray.far=d;see=!C.ray.intersectObjects(C.whWalls,false).length}
+    if(see){C.seenT=3;C.last=P.pos.clone();if(!C.hunting){C.hunting=1;toast('🪚 THE MIMIC SEES YOU!',1500);SFX.scream()}}else if(C.seenT>0)C.seenT-=dt;else C.hunting=0;
+    if(!C.mt||C.mpos.distanceTo(C.mt)<2)C.mt=new THREE.Vector3(C.W+R(-36,36),0,R(-76,-4));
+    const tg=C.seenT>0?(see?P.pos:C.last):C.mt,dir=new THREE.Vector3(tg.x-C.mpos.x,0,tg.z-C.mpos.z),dd=dir.length();if(dd>.1){const before=C.mpos.clone();C.mpos.addScaledVector(dir.normalize(),Math.min(dd,(C.seenT>0?12.5:6)*dt));collide(C.mpos,false);if(C.mpos.distanceTo(before)<.01)C.mt=null}
+    m.position.set(C.mpos.x,Math.abs(Math.sin(now/90))*.3,C.mpos.z);m.rotation.y=Math.atan2(dir.x,dir.z);const dp=Math.hypot(P.pos.x-C.mpos.x,P.pos.z-C.mpos.z);CH.growl=Math.max(0,1-dp/35)*.2;
+    if(P.safe>0)P.safe-=dt;else if(dp<3.5)return die('The Mimic caught you in the warehouse...');
+    if(C.powered&&P.pos.z<-82){C.phase='puzzle';solids.push({m:C.ctrlDoor,x0:C.W-2,x1:C.W+2,z0:-81,z1:-80,y1:10});C.ctrlDoor.position.y=5;SFX.slam();CH.growl=0;toast('You shut the door behind you. Safe... for now.',2500);C.newSeq()}}
+   if(C.phase==='puzzle'){if(C.show>0){C.show-=dt;const i=Math.floor((3.2+C.seq.length*.9-C.show-3.2)/.9);const t=3.2+C.seq.length*.9-C.show;
+     if(t<1.5)C.drawScreen('WATCH...');else{const j=Math.floor((t-1.5)/.9),ph=(t-1.5)%.9;if(j<C.seq.length)C.drawScreen(ph<.6?C.COLS[C.seq[j]][0]:'',ph<.6?C.COLS[C.seq[j]][2]:null);else C.drawScreen('YOUR TURN!')}
+     if(C.show<=0)C.drawScreen('YOUR TURN!');return}
+    let on=-1;C.pads.forEach((p,i)=>{if(Math.abs(P.pos.x-p.position.x)<2.2&&Math.abs(P.pos.z-p.position.z)<2.2)on=i});
+    if(on!==C.onPad){C.onPad=on;if(on>=0){C.pads[on].material.color.setHex(0xffffff);setTimeout(()=>C.pads[on].material.color.setHex(C.COLS[on][1]),250);
+     if(on===C.seq[C.pstep]){C.pstep++;SFX.beep();C.drawList();if(C.pstep>=C.seq.length){C.phase='car';C.drawScreen('UNLOCKED!');SFX.good();unsolid(C.garage);C.garage.position.y=20;toast('The garage door opened! Get in the car!',3000);setObj('Drive away!');
+       clickable(C.carHit,'Drive away!',()=>chapterWin(5,['You floor it out of the warehouse...','250 doors, EYFE and the Mimic... all behind you.','CHAPTER 5 COMPLETE: THE ENDLESS DOORS TO VICTORY']))}}
+     else{SFX.bad();toast('WRONG! Watch again...',1500);C.newSeq(true)}}}}}},
+ newSeq(keep){const C=this;if(!keep){C.seq=[];for(let i=0;i<6;i++)C.seq.push(RI(0,3))}C.pstep=0;C.show=3.2+C.seq.length*.9;C.drawList()},
+ usePower(){const C=this;if(C.powered)return;if(C.got<25){toast('The power box needs 25 switches. You have '+C.got+'.');return}C.powered=true;SFX.good();P.shake=.4;toast('⚡ POWER ON! The red door opened!',3000);unsolid(C.ctrlDoor);C.ctrlDoor.position.y=20;setObj('Get into the control room!');C.drawList()},
+ revive(){const C=this;state='play';P.safe=2.5;$('heart').style.boxShadow='none';C.trapT=0;
+  if(C.phase==='doors'){C.chase=null;C.stare=null;C.eyfe.visible=false;CH.growl=0;const z0=-24*C.cur;tp(C.X+(C.roomType(C.cur-1)==='choice'?-C.bad[C.cur-1]*4:0),z0-(C.roomType(C.cur-1)==='choice'?2:3),0)}
+  else if(C.phase==='ware'){C.mpos.set(C.W+(P.pos.x<C.W?30:-30),0,P.pos.z<-40?-10:-70);C.seenT=0}},
+ leave(){const C=this;chLights(0);AMB.intensity=.55;scene.fog.far=95;C.eyfe.visible=false;C.mimic.visible=false;C.chase=null;C.stare=null;[...C.rooms.values()].forEach(r=>C.killRoom(r));$('heart').style.boxShadow='none';CH.growl=0}};
+// ================= CHAPTER 6: GOING DOWN (the sewers) =================
+// The road breaks and you fall into the sewer. Objective: find a way out... then: "Wait... actually, survive 10 days in here 😈"
+// HUNGER: the only food is steak. NIGHT: the Mimic comes out and hunts you by sight. Hide in the pipes.
+CH[6]={build(){const C=this;C.S=6000;C.N=9;C.cs=14;C.meshes=[];C.walls=[];C.ray=new THREE.Raycaster();
+ const S=C.S,span=C.N*C.cs;box(span+20,1,span+20,M(0x2a3a2a),S,-.5,-20-span/2+C.cs/2,false);box(span+20,1,span+20,M(0x101810),S,8.5,-20-span/2+C.cs/2,false);
+ C.steaks=[];for(let i=0;i<14;i++){const g=new THREE.Group();const m=new THREE.Mesh(new THREE.SphereGeometry(.8,12,8),new THREE.MeshLambertMaterial({color:0x8a2a1a,emissive:0x2a0800}));m.scale.set(1,.35,.75);m.position.y=.4;
+  const bone=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.2,6),M(0xf0e8d0));bone.rotation.z=Math.PI/2;bone.position.set(.9,.4,0);g.add(m,bone);const hit=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.6,2),new THREE.MeshBasicMaterial({visible:false}));hit.position.y=.6;g.add(hit);g.userData.hit=hit;scene.add(g);C.steaks.push(g)}
+ C.pipes=[];for(let i=0;i<10;i++){const g=new THREE.Group();const p=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,3,16,1,true),new THREE.MeshLambertMaterial({color:0x4a5a4a,side:THREE.DoubleSide}));p.rotation.x=Math.PI/2;p.position.y=2.2;
+  const inside=new THREE.Mesh(new THREE.CircleGeometry(2.1,16),M(0x050805));inside.position.set(0,2.2,-1.4);g.add(p,inside);scene.add(g);C.pipes.push(g)}
+ C.mimic=makeMimic();C.mimic.visible=false;C.sky=new THREE.PointLight(0xaaffaa,1.2,45,1.2);scene.add(C.sky);CH[6].lights=[C.sky]},
+ cell(x,z){return[Math.round((x-this.S)/this.cs)+4,Math.round((-20-z)/this.cs)]},
+ cpos(i,j){return new THREE.Vector3(this.S+(i-4)*this.cs,0,-20-j*this.cs)},
+ genMaze(){const C=this,N=C.N,cs=C.cs;C.meshes.forEach(m=>{scene.remove(m);unsolid(m)});C.meshes=[];C.walls=[];
+  C.V=[...Array(N)].map(()=>Array(N).fill(true));C.H=[...Array(N)].map(()=>Array(N).fill(true));const seen=[...Array(N)].map(()=>Array(N).fill(false));
+  const stack=[[0,0]];seen[0][0]=true;while(stack.length){const[i,j]=stack[stack.length-1];const nb=[[1,0],[-1,0],[0,1],[0,-1]].map(([a,b])=>[i+a,j+b,a,b]).filter(([a,b])=>a>=0&&b>=0&&a<N&&b<N&&!seen[a][b]);
+   if(!nb.length){stack.pop();continue}const[a,b,da,db]=nb[RI(0,nb.length-1)];if(da===1)C.V[i][j]=false;if(da===-1)C.V[a][b]=false;if(db===1)C.H[i][j]=false;if(db===-1)C.H[a][b]=false;seen[a][b]=true;stack.push([a,b])}
+  const wm=M(0x3a4a3a),wb=(w,d,x,z)=>{const m=box(w,8,d,wm,x,4,z);C.meshes.push(m);C.walls.push(m)};
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){const p=C.cpos(i,j);if(i<N-1&&C.V[i][j])wb(1.2,cs+1.2,p.x+cs/2,p.z);if(j<N-1&&C.H[i][j])wb(cs+1.2,1.2,p.x,p.z-cs/2)}
+  const a=C.cpos(0,0),b=C.cpos(N-1,N-1);wb(1.2,N*cs+1.2,a.x-cs/2,(a.z+b.z)/2);wb(1.2,N*cs+1.2,b.x+cs/2,(a.z+b.z)/2);wb(N*cs+1.2,1.2,(a.x+b.x)/2,a.z+cs/2);wb(N*cs+1.2,1.2,(a.x+b.x)/2,b.z-cs/2);
+  for(let k=0;k<7;k++){const bar=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,7,6),M(0x8a8a90));bar.position.set(b.x-4.5+k*1.5,3.5,b.z-cs/2+.9);scene.add(bar);C.meshes.push(bar)}   // the BARRED exit
+  const ex=textSprite();ex.material.depthTest=true;ex.scale.set(8,2,1);ex.position.set(b.x,7,b.z-cs/2+1);scene.add(ex);paint(ex,[['EXIT',190,'#3aff6a',190]]);C.meshes.push(ex)},
+ path(a,b){const C=this,N=C.N,key=(i,j)=>i*N+j,prev=new Map([[key(a[0],a[1]),null]]),q=[a];
+  while(q.length){const[i,j]=q.shift();if(i===b[0]&&j===b[1])break;const nb=[];if(i<N-1&&!C.V[i][j])nb.push([i+1,j]);if(i>0&&!C.V[i-1][j])nb.push([i-1,j]);if(j<N-1&&!C.H[i][j])nb.push([i,j+1]);if(j>0&&!C.H[i][j-1])nb.push([i,j-1]);
+   nb.forEach(n=>{if(!prev.has(key(n[0],n[1]))){prev.set(key(n[0],n[1]),[i,j]);q.push(n)}})}
+  const out=[];let c=b;while(c&&!(c[0]===a[0]&&c[1]===a[1])){out.unshift(c);c=prev.get(key(c[0],c[1]))}return out},
+ placeSteaks(){const C=this;C.steaks.forEach(g=>{const p=C.cpos(RI(0,8),RI(0,8));g.position.set(p.x+R(-3,3),0,p.z+R(-3,3));g.visible=true;unclick(g.userData.hit);clickable(g.userData.hit,'Eat the steak',()=>{g.visible=false;unclick(g.userData.hit);C.hunger=Math.min(100,C.hunger+35);SFX.crunch();toast('🥩 Yum! That steak was GOOD.')})})},
+ start(){const C=this;chLights(6);AMB.intensity=.75;AMB.color.setHex(0x6a8a6a);scene.fog.far=70;C.genMaze();
+  C.pipes.forEach(g=>{let i,j;do{i=RI(0,8);j=RI(0,8)}while(i+j<2);const p=C.cpos(i,j);g.position.set(p.x+R(-3,3),0,p.z+R(-3,3));g.rotation.y=R(0,6);const hit=g.children[0];unclick(hit);clickable(hit,'Hide in the pipe',()=>C.hide(g))});
+  C.placeSteaks();Object.assign(C,{phase:'cut',t:0,hunger:100,starved:false,hid:null,night:false,day:1,mpos:C.cpos(8,8),mpath:[],seenT:0,lt:0});C.mimic.visible=false;
+  const st=C.cpos(0,0);tp(st.x,st.z+3,0);state='talk';blackout(true);
+  say([['','*Driving down the road...*'],['You',"What's that... a sewer pipe?"],['','*BANG! BANG! BOOM!*'],['','The road breaks... you fall and land on a walkway. Your car sinks into the sewer water.']],()=>{blackout(false);state='play';C.phase='find';SFX.slam();P.shake=.8;C.drawList()})},
+ hide(g){const C=this;if(C.hid)return;C.hid=g;C.hidFrom=P.pos.clone();P.pos.set(g.position.x,0,g.position.z);P.spMul=0;$('slats').style.display='block';SFX.door();toast('Hiding in the pipe... press E to get out')},
+ useKey(){const C=this;if(!C.hid)return false;C.hid=null;P.pos.copy(C.hidFrom);P.spMul=1;$('slats').style.display='none';SFX.door();return true},
+ drawList(){const C=this,h=Math.ceil(C.hunger);setList((C.night?'🌙 NIGHT ':'☀️ DAY ')+C.day+' / 10','🍖 Hunger<div style="height:14px;background:#2a1a0a;border-radius:7px;overflow:hidden;margin:3px 0 6px"><div style="height:100%;width:'+h+'%;background:'+(h<25?'#ff3a3a':'#ffaa3a')+'"></div></div>'+(C.night?'🪚 The Mimic is out! Hide in a pipe!':'🥩 Eat steak to stay alive'));
+  setObj(C.phase==='find'?'Find a way out':'Survive 10 days in here 😈 ('+Math.ceil((C.night?60:30)-C.t%60)+'s)')},
+ step(dt,now){const C=this;if(C.phase==='cut')return;C.t+=dt;C.lt-=dt;C.sky.position.set(P.pos.x,7,P.pos.z);C.sky.color.setHex(C.night?0xff3020:0xaaffaa);
+  const day=Math.floor(C.t/60)+1,night=C.t%60>=30;
+  if(day>10){return chapterWin(6,['DAY 10 IS OVER...','The bars slide open. You crawl out into the sunlight.','CHAPTER 6 COMPLETE: GOING DOWN']),C.starved||earn('hungry')}
+  if(night!==C.night||day!==C.day){C.night=night;C.day=day;
+   if(night){AMB.color.setHex(0x6a1a1a);AMB.intensity=.4;C.mimic.visible=true;let far;do{far=[RI(0,8),RI(0,8)]}while(Math.abs(far[0]-C.cell(P.pos.x,P.pos.z)[0])+Math.abs(far[1]-C.cell(P.pos.x,P.pos.z)[1])<8);C.mpos=C.cpos(far[0],far[1]);C.mpath=[];C.seenT=0;toast('🌙 NIGHT '+day+'... the Mimic is coming out.',3000);SFX.scream()}
+   else{AMB.color.setHex(0x6a8a6a);AMB.intensity=.75;C.mimic.visible=false;CH.growl=0;C.placeSteaks();toast('☀️ DAY '+day+' — the steaks are back!',3000)}}
+  // hunger
+  C.hunger=Math.max(0,C.hunger-100/600*1.5*dt);if(C.hunger<=0){C.starved=true;P.hp=Math.max(0,P.hp-4*dt);drawHp();if(P.hp<=0)return die('You starved... eat the steaks!')}
+  if(C.lt<=0){C.lt=.25;C.drawList()}
+  if(C.hid)P.pos.set(C.hid.position.x,0,C.hid.position.z);
+  // the barred exit
+  const[ci,cj]=C.cell(P.pos.x,P.pos.z);if(C.phase==='find'&&ci===8&&cj===8){C.phase='survive';toast("It's barred shut...",2500);setTimeout(()=>{if(chapter===6)say([['','Wait... actually, survive 10 days in here 😈']])},1500)}
+  // the Mimic at night
+  if(night){const m=C.mimic;m.userData.saws.forEach(sw=>sw.rotation.z+=dt*14);let see=false;const eye=new THREE.Vector3(C.mpos.x,8,C.mpos.z),me=new THREE.Vector3(P.pos.x,P.pos.y+3,P.pos.z),to=me.clone().sub(eye),d=to.length();
+   if(!C.hid&&d<45){C.ray.set(eye,to.clone().normalize());C.ray.far=d;see=!C.ray.intersectObjects(C.walls,false).length}
+   if(see){if(C.seenT<=0){toast('🪚 THE MIMIC SEES YOU! RUN!',1500);SFX.scream()}C.seenT=3;C.last=[ci,cj]}else C.seenT-=dt;
+   const mc=C.cell(C.mpos.x,C.mpos.z);let tg;
+   if(see&&mc[0]===ci&&mc[1]===cj)tg=P.pos.clone();
+   else{if(!C.mpath.length||(C.seenT>0&&C.repath<=0)){C.repath=.5;C.mpath=C.path(mc,C.seenT>0?C.last:[RI(0,8),RI(0,8)])}C.repath-=dt;const nx=C.mpath[0];tg=nx?C.cpos(nx[0],nx[1]):C.mpos.clone();if(nx&&C.mpos.distanceTo(tg)<.8)C.mpath.shift()}
+   const dir=new THREE.Vector3(tg.x-C.mpos.x,0,tg.z-C.mpos.z),dd=dir.length();if(dd>.05)C.mpos.addScaledVector(dir.normalize(),Math.min(dd,(C.seenT>0?14.5:8)*dt));
+   m.position.set(C.mpos.x,Math.abs(Math.sin(now/90))*.3,C.mpos.z);if(dd>.05)m.rotation.y=Math.atan2(dir.x,dir.z);
+   const dp=Math.hypot(P.pos.x-C.mpos.x,P.pos.z-C.mpos.z);CH.growl=Math.max(0,1-dp/35)*.2;$('heart').style.boxShadow='inset 0 0 160px 40px rgba(255,0,20,'+(Math.max(0,1-dp/35)*.5)+')';
+   if(P.safe>0)P.safe-=dt;else if(dp<3.5&&!C.hid)return die('The Mimic found you in the sewer...')}
+  else $('heart').style.boxShadow='none'},
+ revive(){const C=this;state='play';P.safe=3;P.hp=100;drawHp();C.hunger=Math.max(C.hunger,50);if(C.hid)C.useKey();const mc=C.cell(C.mpos.x,C.mpos.z);let c;do{c=[RI(0,8),RI(0,8)]}while(Math.abs(c[0]-mc[0])+Math.abs(c[1]-mc[1])<8);const p=C.cpos(c[0],c[1]);tp(p.x,p.z,0)},
+ leave(){const C=this;chLights(0);AMB.intensity=.55;AMB.color.setHex(0x50303a);scene.fog.far=95;C.mimic.visible=false;if(C.hid)C.useKey();$('heart').style.boxShadow='none';CH.growl=0;P.spMul=1}};
 // ================= CHAPTER 3: NOT A REAL BABY (the daycare) =================
 // You are a 28 year old man... in a BABY's body. Find your 6 grown-up things to break the curse.
 // Don't let the FAMILY (they want to adopt you) or the COPS see you. Get caught -> kicked out -> 8OTHY.
