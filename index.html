@@ -41,12 +41,6 @@ canvas{display:block}
 .ach.got{border-color:#ffd23b;background:#46320a}.ach img{width:70px;height:70px}.ach.lock img{opacity:.3}
 .ach .t{flex:1}.ach .n{font-size:22px;color:#ffd23b}.ach.lock .n{color:#ccc}.ach .d{font-family:system-ui;font-size:15px;opacity:.85}
 .ach button{font:inherit;font-size:16px;padding:8px 14px;border-radius:10px;border:0;background:#c8961e;color:#fff;cursor:pointer}.ach button.on{background:#28aa46}
-#micBtn{position:absolute;left:18px;top:calc(50% + 62px);width:96px;height:96px;border-radius:50%;border:4px solid #ff2235;background:#2a0006;font-size:46px;pointer-events:auto;cursor:pointer;box-shadow:0 0 14px #ff2235}#micBtn:hover{transform:scale(1.08)}
-#voiceWin{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:84vh;z-index:18;background:#140a0e;border:3px solid #ff2235;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;font-family:system-ui}
-#voiceWin h2{margin:0;text-align:center;color:#ff4050;font:900 34px 'Arial Black'}#voiceWin p{margin:0;text-align:center;opacity:.8}
-#vRec{font:900 26px 'Arial Black';padding:14px;border-radius:14px;border:0;background:#c81020;color:#fff;cursor:pointer}#vRec.on{background:#fff;color:#c81020;animation:vblink .6s infinite alternate}@keyframes vblink{to{opacity:.6}}
-#vList{overflow-y:auto;display:flex;flex-direction:column;gap:8px}.vl{display:flex;align-items:center;gap:10px;background:#282228;border-radius:10px;padding:8px 12px;font-size:18px}.vl span{flex:1}.vl button{font-size:20px;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;background:#3a3a46;color:#fff}
-#vClose{align-self:center;font:inherit;font-size:18px;padding:8px 30px;border-radius:10px;border:0;background:#5a2830;color:#fff;cursor:pointer}
 #achClose{align-self:center;font:inherit;font-size:20px;padding:8px 30px;border-radius:10px;border:0;background:#5a2830;color:#fff;cursor:pointer}
 #banner{position:fixed;left:50%;top:-140px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:14px;background:#2a1904;border:4px solid #ffd23b;border-radius:16px;padding:10px 22px 10px 10px;transition:top .5s;pointer-events:none}
 #banner img{width:84px}#banner .a{color:#ffd23b;font-size:26px}#banner .b{font-size:24px}#banner .c{font-family:system-ui;font-size:16px;opacity:.85}
@@ -68,10 +62,8 @@ canvas{display:block}
 <div id="trap" class="hide"><div class="panel" style="background:#2a0006;border-color:#ff2235"><h2 style="margin:0 0 6px">IT'S A TRAP!</h2><p style="font-family:system-ui;margin:0 0 14px">Click PUSH <b id="pushLeft">50</b> times!</p><button id="push">PUSH!</button></div></div>
 <div id="hb" class="hide"><div style="font-size:30px;color:#ff4050;text-shadow:0 0 20px #f00;margin-bottom:8px">HE'S AT THE DOOR... STAY CALM</div><canvas id="hbc" width="820" height="300"></canvas>
  <div style="font-family:system-ui;font-size:18px;margin-top:8px"><b style="color:#ff7a9a">LEFT CLICK</b> for hearts from the left · <b style="color:#7ac8ff">RIGHT CLICK</b> for hearts from the right — when they reach the middle!</div></div>
-<div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><button id="micBtn" title="Record 8OTHY's voice">🎤</button><div id="count"></div>
+<div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><div id="count"></div>
  <div id="lobbyHint">WASD walk · <b>hold RIGHT-CLICK + drag</b> to turn the camera · stand on a <b>CHAPTER</b> pad to play</div></div>
-<div id="voiceWin" class="hide"><h2>🎤 8OTHY'S VOICE</h2><p>Record lines for your 8OTHY Plushie. Hold the plushie (press 1) and CLICK to hear a random one!</p>
- <button id="vRec">● RECORD</button><div id="vList"></div><button id="vClose">✖ CLOSE</button></div>
 <div id="achWin" class="hide"><h2>🏆 ACHIEVEMENTS</h2><div id="achList"></div><button id="achClose">✖ CLOSE</button></div>
 <div id="banner"><img src="achievements-icon.png"><div><div class="a">ACHIEVEMENT UNLOCKED!</div><div class="b" id="bName"></div><div class="c" id="bDesc"></div></div></div>
 <canvas id="scare"></canvas>
@@ -446,24 +438,7 @@ const viewPlush=makePlush();viewPlush.scale.setScalar(.32);viewPlush.position.se
 const lobbyPlush=makePlush();lobbyPlush.scale.setScalar(.7);lobbyPlush.position.set(0,-2.45,.55);armR.add(lobbyPlush);                  // in your avatar's hand (lobby)
 P.holdPlush=false;
 addEventListener('keydown',e=>{if(e.code==='Digit1'&&!e.repeat&&state==='play'&&hasPlush()){P.holdPlush=!P.holdPlush;toast(P.holdPlush?'🧸 8OTHY Plushie':'Put the plushie away',1400)}});
-// ---------------- 8OTHY's VOICE: FiverFlow records the lines himself with his microphone ----------------
-// Saved in this browser (localStorage, as small sound files). Never sent anywhere.
-let voices=[];try{voices=JSON.parse(localStorage.getItem('cb_voices')||'[]')}catch(e){}
-const saveVoices=()=>{try{localStorage.setItem('cb_voices',JSON.stringify(voices));return true}catch(e){toast('Too many lines saved! Delete one first.');return false}};
-let rec=null,recChunks=[],recTimer=null;
-function drawVoices(){$('vList').innerHTML=voices.length?voices.map((v,i)=>'<div class="vl"><span>🗣️ Line '+(i+1)+'</span><button data-p="'+i+'">▶</button><button data-d="'+i+'">🗑</button></div>').join(''):'<p>No lines yet. Press RECORD and talk like 8OTHY!</p>';
- $('vList').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>playVoice(+b.dataset.p));$('vList').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{voices.splice(+b.dataset.d,1);saveVoices();drawVoices()})}
-function playVoice(i){const v=voices[i];if(!v)return;const a=new Audio(v);a.volume=1;a.play().catch(()=>{})}
-async function toggleRec(){if(rec){rec.stop();return}
- if(voices.length>=10){toast('10 lines max! Delete one first.');return}
- let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){toast('The microphone is blocked. Allow it in the address bar!',3500);return}
- recChunks=[];rec=new MediaRecorder(stream);rec.ondataavailable=e=>{if(e.data.size)recChunks.push(e.data)};
- rec.onstop=()=>{clearTimeout(recTimer);stream.getTracks().forEach(t=>t.stop());const blob=new Blob(recChunks,{type:rec.mimeType||'audio/webm'});rec=null;$('vRec').classList.remove('on');$('vRec').textContent='● RECORD';
-  const fr=new FileReader();fr.onload=()=>{voices.push(fr.result);if(!saveVoices())voices.pop();drawVoices();playVoice(voices.length-1)};fr.readAsDataURL(blob)};
- rec.start();$('vRec').classList.add('on');$('vRec').textContent='■ STOP (5s max)';recTimer=setTimeout(()=>rec&&rec.stop(),5000)}
-$('micBtn').onclick=()=>{drawVoices();$('voiceWin').classList.remove('hide')};$('vClose').onclick=()=>{if(rec)rec.stop();$('voiceWin').classList.add('hide')};$('vRec').onclick=toggleRec;
-// holding the plushie + CLICK = a random line
-renderer.domElement.addEventListener('mousedown',e=>{if(e.button===0&&state==='play'&&locked&&P.holdPlush&&hasPlush()&&voices.length){playVoice(RI(0,voices.length-1));viewPlush.scale.setScalar(.36);setTimeout(()=>viewPlush.scale.setScalar(.32),150)}});
+try{localStorage.removeItem('cb_voices')}catch(e){}   // the voice recorder was removed; this erases old recordings
 let plushWas=null;function checkPlush(){const h=hasPlush();if(plushWas===false&&h)toast('🧸 You got the 8OTHY PLUSHIE! Press 1 to hold it!',4000);plushWas=h}
 const title=textSprite(null,1024,200);title.scale.set(11,2.15,1);me.add(title);title.position.y=7.2;
 function drawTitle(){const a=ACH.find(a=>a.id===SAVE.equipped);const stat='💀 '+SAVE.deaths+' deaths · 📖 Best: '+(SAVE.best?'Chapter '+SAVE.best:'none yet');paint(title,a?[['🏆 '+a.name,80,'#ffd23b',85],[stat,46,'#eeeeee',170]]:[[stat,50,'#eeeeee',120]])}
@@ -1008,5 +983,5 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  viewPlush.visible=!!P.holdPlush&&hasPlush()&&!P.dead&&!P.hidden&&state!=='lobby';if(viewPlush.visible)viewPlush.rotation.z=Math.sin(now/400)*.06;
  renderer.render(scene,camera)}
 requestAnimationFrame(loop);
-me.visible=false;checkPlush();window.CB={get voices(){return voices},playVoice,hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
+me.visible=false;checkPlush();window.CB={hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
 </script></body></html>
