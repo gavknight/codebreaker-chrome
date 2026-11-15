@@ -33,6 +33,10 @@ canvas{display:block}
 #lobbyUI{position:fixed;inset:0;z-index:6;pointer-events:none}
 #trophy{position:absolute;left:18px;top:50%;width:96px;height:96px;margin-top:-48px;pointer-events:auto;cursor:pointer;filter:drop-shadow(0 0 10px #ffb000);transition:transform .1s}#trophy:hover{transform:scale(1.08)}
 #freeBtn{position:absolute;left:18px;top:calc(50% + 62px);width:96px;height:96px;border-radius:50%;border:4px solid #555;background:#1a1a1e;color:#aaa;font:900 17px 'Arial Black';pointer-events:auto;cursor:pointer;line-height:1.1}#freeBtn:hover{transform:scale(1.08)}#freeBtn.on{border-color:#3aff6a;color:#3aff6a;box-shadow:0 0 14px #3aff6a}
+#setBtn{position:absolute;left:18px;top:calc(50% - 158px);width:96px;height:96px;border-radius:50%;border:4px solid #888;background:#1a1a1e;font-size:50px;pointer-events:auto;cursor:pointer;line-height:1}#setBtn:hover{transform:scale(1.08) rotate(30deg)}
+#setWin{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(500px,94vw);z-index:18;background:#14141a;border:3px solid #888;border-radius:18px;padding:18px 22px;display:flex;flex-direction:column;gap:14px;font-family:system-ui}
+#setWin h2{margin:0;text-align:center;font:900 34px 'Arial Black';color:#ddd}#setWin label{display:flex;flex-direction:column;gap:6px;font-size:18px}#setWin label b{display:flex;justify-content:space-between}#setWin input{width:100%;accent-color:#ff2235}
+#setBtns{display:flex;gap:10px;justify-content:center}#setBtns button{font:inherit;font-size:17px;padding:8px 22px;border-radius:10px;border:0;color:#fff;cursor:pointer}
 #freeTag{position:absolute;right:20px;top:18px;font-size:18px;color:#3aff6a;text-shadow:2px 2px 0 #000;display:none}
 #lobbyHint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-family:system-ui;font-size:16px;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:10px;white-space:nowrap}
 #count{position:absolute;left:50%;top:30%;transform:translateX(-50%);font-size:90px;color:#3aff6a;text-shadow:0 0 30px #3aff6a;display:none}
@@ -64,8 +68,14 @@ canvas{display:block}
 <div id="trap" class="hide"><div class="panel" style="background:#2a0006;border-color:#ff2235"><h2 style="margin:0 0 6px">IT'S A TRAP!</h2><p style="font-family:system-ui;margin:0 0 14px">Click PUSH <b id="pushLeft">50</b> times!</p><button id="push">PUSH!</button></div></div>
 <div id="hb" class="hide"><div style="font-size:30px;color:#ff4050;text-shadow:0 0 20px #f00;margin-bottom:8px">HE'S AT THE DOOR... STAY CALM</div><canvas id="hbc" width="820" height="300"></canvas>
  <div style="font-family:system-ui;font-size:18px;margin-top:8px"><b style="color:#ff7a9a">LEFT CLICK</b> for hearts from the left · <b style="color:#7ac8ff">RIGHT CLICK</b> for hearts from the right — when they reach the middle!</div></div>
-<div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><button id="freeBtn" title="Free Mode: practice, nothing counts">FREE<br>MODE<br>OFF</button><div id="count"></div>
+<div id="lobbyUI" class="hide"><img id="trophy" src="achievements-icon.png" title="Achievements"><button id="setBtn" title="Settings">⚙️</button><button id="freeBtn" title="Free Mode: practice, nothing counts">FREE<br>MODE<br>OFF</button><div id="count"></div>
  <div id="lobbyHint">WASD walk · <b>hold RIGHT-CLICK + drag</b> to turn the camera · stand on a <b>CHAPTER</b> pad to play</div></div>
+<div id="setWin" class="hide"><h2>⚙️ SETTINGS</h2>
+ <label><b>🔊 Volume <span id="sv_vol"></span></b><input type="range" id="s_vol" min="0" max="1.5" step="0.05"></label>
+ <label><b>🖱️ Mouse sensitivity <span id="sv_sens"></span></b><input type="range" id="s_sens" min="0.3" max="2.5" step="0.05"></label>
+ <label><b>💡 Brightness <span id="sv_bright"></span></b><input type="range" id="s_bright" min="0.6" max="1.8" step="0.05"></label>
+ <label><b>👁️ Field of view <span id="sv_fov"></span></b><input type="range" id="s_fov" min="55" max="100" step="1"></label>
+ <div id="setBtns"><button id="setReset" style="background:#444">↺ RESET</button><button id="setClose" style="background:#5a2830">✖ CLOSE</button></div></div>
 <div id="achWin" class="hide"><h2>🏆 ACHIEVEMENTS</h2><div id="achList"></div><button id="achClose">✖ CLOSE</button></div>
 <div id="banner"><img src="achievements-icon.png"><div><div class="a">ACHIEVEMENT UNLOCKED!</div><div class="b" id="bName"></div><div class="c" id="bDesc"></div></div></div>
 <canvas id="snapc" style="position:fixed;inset:0;z-index:12;pointer-events:none;display:none"></canvas><canvas id="scare"></canvas>
@@ -82,7 +92,9 @@ const R=(a,b)=>a+Math.random()*(b-a),RI=(a,b)=>Math.floor(R(a,b+1));
 // ---------------- three.js setup ----------------
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));document.body.appendChild(renderer.domElement);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x050203);scene.fog=new THREE.Fog(0x050203,8,95);
-const camera=new THREE.PerspectiveCamera(72,1,.1,400);
+// SETTINGS (saved in this browser): volume, mouse sensitivity, brightness, field of view
+const SET=Object.assign({vol:1,sens:1,bright:1,fov:72},(()=>{try{return JSON.parse(localStorage.getItem('cb_settings'))||{}}catch(e){return{}}})());
+const camera=new THREE.PerspectiveCamera(SET.fov,1,.1,400);
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 scene.add(new THREE.AmbientLight(0x50303a,.55));
 const M=c=>new THREE.MeshLambertMaterial({color:c});
@@ -212,7 +224,7 @@ const keys={};let locked=false,state='menu',notes=[];
 let toastT=null;function toast(t,ms=2200){$('toast').textContent=t;$('toast').style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>$('toast').style.opacity=0,ms)}
 function drawNotes(){$('noteList').innerHTML=notes.length?notes.map(n=>'<div>'+n+'</div>').join(''):'Find the clue cookies...'}
 // ---------------- sound (all made live, no files) ----------------
-let A,master;function audio(){if(A)return;A=new AudioContext();master=A.createGain();master.gain.value=.8;master.connect(A.destination);
+let A,master;function audio(){if(A)return;A=new AudioContext();master=A.createGain();master.gain.value=.8*SET.vol;master.connect(A.destination);
  const nb=A.createBuffer(1,A.sampleRate,A.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;A.noise=nb;
  // the creepy store hum that never stops
  const hum=A.createOscillator();hum.type='sawtooth';hum.frequency.value=55;const hf=A.createBiquadFilter();hf.type='lowpass';hf.frequency.value=120;const hg=A.createGain();hg.gain.value=.05;hum.connect(hf);hf.connect(hg);hg.connect(master);hum.start();
@@ -233,7 +245,7 @@ addEventListener('mousedown',e=>{if(state==='heartbeat'){e.preventDefault();hbPr
 renderer.domElement.addEventListener('click',()=>{if(state==='heartbeat')return;if(state==='play'&&!locked)renderer.domElement.requestPointerLock();else if(locked)interact()});
 
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;if(!locked&&state==='play'){state='paused';$('paused').classList.remove('hide')}});
-addEventListener('mousemove',e=>{if(!locked)return;P.yaw-=e.movementX*.0024;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*.0024))});
+addEventListener('mousemove',e=>{if(!locked)return;P.yaw-=e.movementX*.0024*SET.sens;P.pitch=Math.max(-1.45,Math.min(1.45,P.pitch-e.movementY*.0024*SET.sens))});
 $('resume').onclick=()=>{$('paused').classList.add('hide');state='play';renderer.domElement.requestPointerLock()};
 // ---------------- using things (E / click) ----------------
 const ray=new THREE.Raycaster();let looking=null;
@@ -394,6 +406,15 @@ const ACH=[
 let SAVE;try{SAVE=JSON.parse(localStorage.getItem('cb_save'))}catch(e){}SAVE=Object.assign({earned:{},equipped:null,deaths:0,streak:{},best:0},SAVE||{});
 const saveGame=()=>{try{localStorage.setItem('cb_save',JSON.stringify(SAVE))}catch(e){}};
 const run={start:0,hunted:false};
+// ---------------- SETTINGS window ----------------
+const SET_DEF={vol:1,sens:1,bright:1,fov:72};
+function applySettings(){if(master)master.gain.value=.8*SET.vol;renderer.domElement.style.filter=SET.bright===1?'':'brightness('+SET.bright+')';camera.fov=SET.fov;camera.updateProjectionMatrix();
+ try{localStorage.setItem('cb_settings',JSON.stringify(SET))}catch(e){}
+ ['vol','sens','bright'].forEach(k=>$('sv_'+k).textContent=Math.round(SET[k]*100)+'%');$('sv_fov').textContent=SET.fov+'°'}
+['vol','sens','bright','fov'].forEach(k=>{const el=$('s_'+k);el.value=SET[k];el.oninput=()=>{SET[k]=+el.value;applySettings()}});
+$('setBtn').onclick=()=>$('setWin').classList.remove('hide');$('setClose').onclick=()=>$('setWin').classList.add('hide');
+$('setReset').onclick=()=>{Object.assign(SET,SET_DEF);['vol','sens','bright','fov'].forEach(k=>$('s_'+k).value=SET[k]);applySettings()};
+applySettings();
 let bannerQ=[],bannerOn=false;
 // ---------------- FREE MODE (FiverFlow): practice that doesn't count toward progress ----------------
 let freeMode=false;try{freeMode=localStorage.getItem('cb_free')==='1'}catch(e){}
@@ -1012,5 +1033,5 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  viewPlush.visible=!!P.holdPlush&&hasPlush()&&!P.dead&&!P.hidden&&state!=='lobby';if(viewPlush.visible)viewPlush.rotation.z=Math.sin(now/400)*.06;
  renderer.render(scene,camera)}
 requestAnimationFrame(loop);
-me.visible=false;checkPlush();window.CB={get freeMode(){return freeMode},set freeMode(v){freeMode=v;drawFree()},snapCookie,hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
+me.visible=false;checkPlush();window.CB={SET,applySettings,get freeMode(){return freeMode},set freeMode(v){freeMode=v;drawFree()},snapCookie,hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
 </script></body></html>
