@@ -361,7 +361,7 @@ const ACH=[
  {id:'ch4',name:"THE MIMIC'S LAIR",desc:'Beat Chapter 4'},
  {id:'ch5',name:'ENDLESS DOORS',desc:'Beat Chapter 5'},
  {id:'ch6',name:'GOING DOWN',desc:'Beat Chapter 6'},
- {id:'ch7',name:'CHAPTER 7',desc:'Beat Chapter 7 (needs every other achievement except 8OVERSE)'},
+ {id:'ch7',name:'COMPUTER VIRUS',desc:'Beat Chapter 7 (needs every other achievement except 8OVERSE)'},
  {id:'silent',name:'SILENT STEPS',desc:'Beat Chapter 1 without 8OTHY ever hunting you'},
  {id:'closet',name:'CLOSET KING',desc:'Escape a trap closet (all 50 pushes!)'},
  {id:'anomaly',name:'ANOMALY EYES',desc:'Get 3 anomalies right with NO wrong guesses (Chapter 2)'},
@@ -391,7 +391,7 @@ function paint(sp,lines){const{cv,tex,w,h}=sp.userData,x=cv.getContext('2d');x.c
  lines.forEach(([t,size,col,y])=>{x.font='900 '+size+'px Arial Black';x.lineWidth=size*.18;x.strokeStyle='#000';x.strokeText(t,w/2,y);x.fillStyle=col;x.fillText(t,w/2,y)});tex.needsUpdate=true}
 const sign=textSprite();sign.scale.set(34,8.5,1);sign.position.set(L.x,11,L.z-21);scene.add(sign);paint(sign,[['CODEBREAKER',130,'#ff3045',130],['[HORROR]',70,'#ffffff',225]]);
 // one pad per chapter: stand on it for 3 seconds
-const PADS=[[1,'THE WRONG STORE',0x3aff6a,'#3aff6a'],[2,'THE PHONE GUY',0xb050ff,'#c88aff'],[3,'NOT A REAL BABY',0xff9a2a,'#ffb35a'],[4,"THE MIMIC'S LAIR",0xff2a3a,'#ff5a6a'],[5,'ENDLESS DOORS',0x3ac8ff,'#7ad8ff'],[6,'GOING DOWN',0x6aff3a,'#9aff7a'],[7,'🔒 ALL ACHIEVEMENTS',0xffd23b,'#ffd23b']].map(([n,name,hex,css],i)=>{
+const PADS=[[1,'THE WRONG STORE',0x3aff6a,'#3aff6a'],[2,'THE PHONE GUY',0xb050ff,'#c88aff'],[3,'NOT A REAL BABY',0xff9a2a,'#ffb35a'],[4,"THE MIMIC'S LAIR",0xff2a3a,'#ff5a6a'],[5,'ENDLESS DOORS',0x3ac8ff,'#7ad8ff'],[6,'GOING DOWN',0x6aff3a,'#9aff7a'],[7,'COMPUTER VIRUS',0xffd23b,'#ffd23b']].map(([n,name,hex,css],i)=>{
  const m=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.4,32),new THREE.MeshBasicMaterial({color:hex}));m.position.set(i<4?L.x-24+i*16:L.x-16+(i-4)*16,.2,i<4?L.z-10:L.z+2);scene.add(m);
  const lab=textSprite();lab.scale.set(12,3,1);lab.position.set(m.position.x,4.5,m.position.z);scene.add(lab);paint(lab,[['CHAPTER '+n,105,css,110],[name,52,'#ffffff',205]]);return{n,m,hex}});
 const startPad=PADS[0].m;
@@ -795,7 +795,7 @@ CH[7]={NAMES:{brick:'🧱 Brick Smash',space:'🚀 Space Dodge',jump:'🟡 Jumpi
   say([['','You finally made it home.'],['You','Time to chill... and play some games on my PC.'],['','*Something red flickers in the corner of the screen...*'],['','Beat EVERY game on your PC. Lose just ONE...']],()=>{
    blackout(false);state='ch7';document.exitPointerLock();C.frame.src='ch7.html?run='+Date.now();C.frame.style.display='block';C.bar.style.display='flex';C.drawBar();setTimeout(()=>C.frame.focus(),300)})},
  win(id){const C=this;if(!C.NAMES[id]||C.beat[id])return;C.beat[id]=true;C.drawBar();SFX.good();
-  if(Object.keys(C.NAMES).every(k=>C.beat[k])){C.frame.style.display='none';C.bar.style.display='none';chapterWin(7,['You beat every game on your PC...','...and 8OTHY never got you.','CHAPTER 7 COMPLETE'])}},
+  if(Object.keys(C.NAMES).every(k=>C.beat[k])){C.frame.style.display='none';C.bar.style.display='none';chapterWin(7,['You beat every game on your PC...','...and 8OTHY never got you.','CHAPTER 7 COMPLETE: COMPUTER VIRUS'])}},
  lose(id){const C=this;C.frame.style.display='none';C.bar.style.display='none';die('You lost '+(C.NAMES[id]||'a game')+'... and 8OTHY was standing right behind your chair.')},
  revive(){const C=this;state='ch7';document.exitPointerLock();C.frame.style.display='block';C.bar.style.display='flex';C.drawBar();setTimeout(()=>C.frame.focus(),300)},
  step(){},
