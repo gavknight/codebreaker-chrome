@@ -173,6 +173,8 @@ function angerBothy(){if(B.chase)return;angryT=7;B.closet=null;B.mode='hunt';B.w
 function drawHp(){$('hpNum').textContent=P.hp;$('hpFill').style.width=P.hp+'%'}
 function resetDrawers(){drawers.forEach(dr=>{dr.open=false;dr.d.position.z=1.35;if(!clickables.includes(dr.front))clickables.push(dr.front);dr.mini=false});
  [...drawers].sort(()=>Math.random()-.5).slice(0,6).forEach(dr=>dr.mini=true);minis.forEach(mi=>scene.remove(mi.m));minis.length=0;angryT=0}
+// claw scratches: 3 dark slashes on the trap closet's door (look closely!)
+function clawMarks(){const g=new THREE.Group(),mat=new THREE.MeshBasicMaterial({color:0x140806});for(let i=0;i<3;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.12,2.6,.06),mat);m.position.set(-.6+i*.5,1.4-i*.15,.2);m.rotation.z=.45;g.add(m)}return g}
 // ---------------- BACK DOOR + KEYPAD ----------------
 const backDoor=box(12,14,1,MAT.door,0,7,-201.5);
 const kp=new THREE.Mesh(new THREE.BoxGeometry(2,3,.4),M(0x1c1c22));kp.position.set(8.5,6,-201);scene.add(kp);
@@ -438,7 +440,7 @@ $('toLobby').onclick=goLobby;
 // ---------------- start ----------------
 function startGame(){audio();A.resume();if(hb)hbEnd();B.closet=null;rollCode();placeCookies();notes=[];drawNotes();
  if(paperMesh){scene.remove(paperMesh);paperMesh=null}if(!clickables.includes(giga)){scene.add(giga);clickables.push(giga)}
- closets.forEach(c=>c.trap=false);const pick=[...closets].sort(()=>Math.random()-.5).slice(0,3);pick.forEach(c=>c.trap=true);
+ closets.forEach(c=>{c.trap=false;if(c.scratch){c.door.remove(c.scratch);c.scratch=null}});const pick=[...closets].sort(()=>Math.random()-.5).slice(0,1);pick.forEach(c=>{c.trap=true;c.scratch=clawMarks();c.door.add(c.scratch)});   /* ONE trap closet, and it has claw scratches on the door */
  if(!solids.some(b=>b.m===backDoor))solids.push({m:backDoor,x0:-6,x1:6,z0:-202,z1:-201,y1:14});doorOpen=false;backDoor.position.y=7;
  Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false,hp:100,shake:0,down:0});drawHp();resetDrawers();P.vel.set(0,0,0);
  Object.assign(B,{pos:new THREE.Vector3(0,0,-185),target:randomPoint(),mode:'wander',wait:0,chase:false});
