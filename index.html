@@ -361,6 +361,7 @@ const ACH=[
  {id:'ch4',name:"THE MIMIC'S LAIR",desc:'Beat Chapter 4'},
  {id:'ch5',name:'ENDLESS DOORS',desc:'Beat Chapter 5'},
  {id:'ch6',name:'GOING DOWN',desc:'Beat Chapter 6'},
+ {id:'ch7',name:'CHAPTER 7',desc:'Beat Chapter 7 (needs every other achievement except 8OVERSE)'},
  {id:'silent',name:'SILENT STEPS',desc:'Beat Chapter 1 without 8OTHY ever hunting you'},
  {id:'closet',name:'CLOSET KING',desc:'Escape a trap closet (all 50 pushes!)'},
  {id:'anomaly',name:'ANOMALY EYES',desc:'Get 3 anomalies right with NO wrong guesses (Chapter 2)'},
@@ -390,8 +391,8 @@ function paint(sp,lines){const{cv,tex,w,h}=sp.userData,x=cv.getContext('2d');x.c
  lines.forEach(([t,size,col,y])=>{x.font='900 '+size+'px Arial Black';x.lineWidth=size*.18;x.strokeStyle='#000';x.strokeText(t,w/2,y);x.fillStyle=col;x.fillText(t,w/2,y)});tex.needsUpdate=true}
 const sign=textSprite();sign.scale.set(34,8.5,1);sign.position.set(L.x,11,L.z-21);scene.add(sign);paint(sign,[['CODEBREAKER',130,'#ff3045',130],['[HORROR]',70,'#ffffff',225]]);
 // one pad per chapter: stand on it for 3 seconds
-const PADS=[[1,'THE WRONG STORE',0x3aff6a,'#3aff6a'],[2,'THE PHONE GUY',0xb050ff,'#c88aff'],[3,'NOT A REAL BABY',0xff9a2a,'#ffb35a'],[4,"THE MIMIC'S LAIR",0xff2a3a,'#ff5a6a'],[5,'ENDLESS DOORS',0x3ac8ff,'#7ad8ff'],[6,'GOING DOWN',0x6aff3a,'#9aff7a']].map(([n,name,hex,css],i)=>{
- const m=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.4,32),new THREE.MeshBasicMaterial({color:hex}));m.position.set(i<4?L.x-24+i*16:L.x-8+(i-4)*16,.2,i<4?L.z-10:L.z+2);scene.add(m);
+const PADS=[[1,'THE WRONG STORE',0x3aff6a,'#3aff6a'],[2,'THE PHONE GUY',0xb050ff,'#c88aff'],[3,'NOT A REAL BABY',0xff9a2a,'#ffb35a'],[4,"THE MIMIC'S LAIR",0xff2a3a,'#ff5a6a'],[5,'ENDLESS DOORS',0x3ac8ff,'#7ad8ff'],[6,'GOING DOWN',0x6aff3a,'#9aff7a'],[7,'🔒 ALL ACHIEVEMENTS',0xffd23b,'#ffd23b']].map(([n,name,hex,css],i)=>{
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.4,32),new THREE.MeshBasicMaterial({color:hex}));m.position.set(i<4?L.x-24+i*16:L.x-16+(i-4)*16,.2,i<4?L.z-10:L.z+2);scene.add(m);
  const lab=textSprite();lab.scale.set(12,3,1);lab.position.set(m.position.x,4.5,m.position.z);scene.add(lab);paint(lab,[['CHAPTER '+n,105,css,110],[name,52,'#ffffff',205]]);return{n,m,hex}});
 const startPad=PADS[0].m;
 // you, as a blocky character (only seen in the lobby)
@@ -438,7 +439,8 @@ function stepLobby(dt){let mx=0,mz=0;if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(ke
  me.position.copy(LB.pos);me.rotation.y=LB.face;const sw=moving?Math.sin(LB.walk)*.7:0;armL.rotation.x=sw;armR.rotation.x=-sw;legL.rotation.x=-sw;legR.rotation.x=sw;
  // the START pad: stand on it for 3 seconds
  let onPad=null;PADS.forEach(p=>{const on=Math.hypot(LB.pos.x-p.m.position.x,LB.pos.z-p.m.position.z)<4;p.m.material.color.setHex(on?0xffffff:p.hex);if(on)onPad=p});
- if(onPad){LB.count+=dt;$('count').style.display='block';const n=Math.ceil(3-LB.count);$('count').textContent=n>0?n:'GO!';if(LB.count>=3){$('lobbyUI').classList.add('hide');$('achWin').classList.add('hide');me.visible=false;onPad.n===1?startGame():startChapter(onPad.n)}}
+ if(onPad&&onPad.n===7&&!ch7Ready()){LB.count=0;$('count').style.display='block';$('count').innerHTML='🔒<div style="font-size:20px;color:#ffd23b;text-shadow:none;font-family:system-ui;background:rgba(0,0,0,.7);padding:8px 14px;border-radius:10px">You still need: '+ch7Missing().map(a=>a.name).join(', ')+'</div>'}
+ else if(onPad){LB.count+=dt;$('count').style.display='block';const n=Math.ceil(3-LB.count);$('count').textContent=n>0?n:'GO!';if(LB.count>=3){$('lobbyUI').classList.add('hide');$('achWin').classList.add('hide');me.visible=false;onPad.n===1?startGame():startChapter(onPad.n)}}
  else{LB.count=0;$('count').style.display='none'}
  camera.position.set(Math.max(L.x-34,Math.min(L.x+34,LB.pos.x+Math.sin(LB.camYaw)*16)),LB.pos.y+8,Math.max(L.z-21,Math.min(L.z+21,LB.pos.z+Math.cos(LB.camYaw)*16)));   /* the camera never goes through the lobby walls */camera.lookAt(LB.pos.x,LB.pos.y+4,LB.pos.z)}
 $('toLobby').onclick=goLobby;
@@ -778,6 +780,26 @@ CH[6]={build(){const C=this;C.S=6000;C.N=9;C.cs=14;C.meshes=[];C.walls=[];C.ray=
   else $('heart').style.boxShadow='none'},
  revive(){const C=this;state='play';P.safe=3;P.hp=100;drawHp();C.hunger=Math.max(C.hunger,50);if(C.hid)C.useKey();const mc=C.cell(C.mpos.x,C.mpos.z);let c;do{c=[RI(0,8),RI(0,8)]}while(Math.abs(c[0]-mc[0])+Math.abs(c[1]-mc[1])<8);const p=C.cpos(c[0],c[1]);tp(p.x,p.z,0)},
  leave(){const C=this;chLights(0);AMB.intensity=.55;AMB.color.setHex(0x50303a);scene.fog.far=95;C.mimic.visible=false;if(C.hid)C.useKey();$('heart').style.boxShadow='none';CH.growl=0;P.spMul=1}};
+// ================= CHAPTER 7: your house, your PC... FiveFlows =================
+// FiverFlow's spec: an exact copy of FiveFlows (no Snake, no Guetube). Beat ALL the games on the PC:
+// Brick Smash, Space Dodge and Jumpitry. Lose ONE game... and 8OTHY gets you.
+// Unlocked only with every achievement except 8OVERSE.
+function ch7Missing(){return ACH.filter(a=>a.id!=='8overse'&&a.id!=='ch7'&&!SAVE.earned[a.id])}
+function ch7Ready(){return !ch7Missing().length}
+CH[7]={NAMES:{brick:'🧱 Brick Smash',space:'🚀 Space Dodge',jump:'🟡 Jumpitry'},
+ build(){const C=this;C.frame=document.createElement('iframe');C.frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:24;display:none;background:#000';C.frame.allow='autoplay; microphone; fullscreen';document.body.appendChild(C.frame);
+  C.bar=document.createElement('div');C.bar.style.cssText='position:fixed;right:12px;top:12px;z-index:26;display:none;gap:8px;align-items:center;background:rgba(20,4,8,.85);border:2px solid #ff2235;border-radius:12px;padding:8px 12px;font-family:system-ui;font-size:16px;color:#fff';document.body.appendChild(C.bar);
+  addEventListener('message',e=>{const d=e.data;if(!d||!d.cb7||chapter!==7||state!=='ch7')return;if(d.cb7==='win')C.win(d.id);else if(d.cb7==='lose')C.lose(d.id)})},
+ drawBar(){const C=this;C.bar.innerHTML='<b style="color:#ff4050">BEAT THEM ALL:</b> '+Object.keys(C.NAMES).map(k=>(C.beat[k]?'✅':'⬜')+' '+C.NAMES[k]).join(' &nbsp; ')+' <button id="c7home" style="margin-left:8px;font:700 14px system-ui;border:0;border-radius:8px;padding:5px 10px;background:#5a2830;color:#fff;cursor:pointer">🏠 Lobby</button>';$('c7home').onclick=()=>goLobby()},
+ start(){const C=this;C.beat={};state='talk';blackout(true);$('hud').classList.add('hide');
+  say([['','You finally made it home.'],['You','Time to chill... and play some games on my PC.'],['','*Something red flickers in the corner of the screen...*'],['','Beat EVERY game on your PC. Lose just ONE...']],()=>{
+   blackout(false);state='ch7';document.exitPointerLock();C.frame.src='ch7.html?run='+Date.now();C.frame.style.display='block';C.bar.style.display='flex';C.drawBar();setTimeout(()=>C.frame.focus(),300)})},
+ win(id){const C=this;if(!C.NAMES[id]||C.beat[id])return;C.beat[id]=true;C.drawBar();SFX.good();
+  if(Object.keys(C.NAMES).every(k=>C.beat[k])){C.frame.style.display='none';C.bar.style.display='none';chapterWin(7,['You beat every game on your PC...','...and 8OTHY never got you.','CHAPTER 7 COMPLETE'])}},
+ lose(id){const C=this;C.frame.style.display='none';C.bar.style.display='none';die('You lost '+(C.NAMES[id]||'a game')+'... and 8OTHY was standing right behind your chair.')},
+ revive(){const C=this;state='ch7';document.exitPointerLock();C.frame.style.display='block';C.bar.style.display='flex';C.drawBar();setTimeout(()=>C.frame.focus(),300)},
+ step(){},
+ leave(){const C=this;C.frame.style.display='none';C.bar.style.display='none';C.frame.src='about:blank'}};
 // ================= CHAPTER 3: NOT A REAL BABY (the daycare) =================
 // You are a 28 year old man... in a BABY's body. Find your 6 grown-up things to break the curse.
 // Don't let the FAMILY (they want to adopt you) or the COPS see you. Get caught -> kicked out -> 8OTHY.
@@ -919,6 +941,7 @@ function collide(p,crouching){for(const b of solids){if(b.closet&&P.hidden)conti
 let last=performance.now(),stepT=0,heartT=0,flickT=0;
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
  if(state==='lobby'){stepLobby(dt);renderer.render(scene,camera);return}
+ if(chapter===7&&(state==='ch7'||state==='dead'))return;
  if(state==='heartbeat')stepHeartbeat(dt);
  if((state==='play'||state==='keypad'||state==='trap'||state==='heartbeat'||state==='talk')&&!P.dead){const canMove=state==='play';
   // moving
