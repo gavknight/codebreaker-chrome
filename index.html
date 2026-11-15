@@ -532,7 +532,7 @@ function startGame(){audio();A.resume();chapter=1;chLights(0);AMB.intensity=.55;
  Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false,hp:100,shake:0,down:0});drawHp();resetDrawers();P.vel.set(0,0,0);
  Object.assign(B,{pos:new THREE.Vector3(0,0,-185),target:randomPoint(),mode:'wander',wait:0,chase:false});
  ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
- toast('Find the PINK clue cookies. Stay quiet...',3500);run.start=performance.now();run.hunted=false;me.visible=false;$('lobbyUI').classList.add('hide');console.log('CODEBREAKER code (for testing): '+CODE)}
+ toast('Find the PINK clue cookies. Stay quiet...',3500);run.start=performance.now();run.hunted=false;me.visible=false;$('lobbyUI').classList.add('hide')}
 $('play').onclick=goLobby;
 document.addEventListener('click',e=>{if(e.target.tagName==='BUTTON')setTimeout(()=>e.target.blur(),0)});   // buttons never keep focus, so SPACE can't press them
 // ---------------- CHAPTERS 2, 3, 4 share these helpers ----------------
