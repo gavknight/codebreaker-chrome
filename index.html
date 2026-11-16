@@ -243,8 +243,8 @@ const SFX={step:v=>A&&nz(.07,env(.12*v,.002,.06),'lowpass',500),beep:()=>A&&osc(
 // lobby.wav in the lobby. In the cookie store, store-calm.wav and store-close.wav play at the SAME time
 // (same length, same chords) and the game fades from calm to close as 8OTHY gets near you.
 const MUSIC={buf:{},gain:{},ready:false};
-async function musLoad(){for(const k of['theme-intro','lobby','store-calm','store-close']){try{const r=await fetch('music/'+k+'.wav');MUSIC.buf[k]=await A.decodeAudioData(await r.arrayBuffer())}catch(e){console.warn('music',k,e)}}
- const t=A.currentTime+.1;for(const k in MUSIC.buf){if(k==='theme-intro')continue;const g=A.createGain();g.gain.value=0;g.connect(master);const src=A.createBufferSource();src.buffer=MUSIC.buf[k];src.loop=true;src.connect(g);src.start(t);MUSIC.gain[k]=g}
+async function musLoad(){for(const k of['lobby','store-calm','store-close']){try{const r=await fetch('music/'+k+'.wav');MUSIC.buf[k]=await A.decodeAudioData(await r.arrayBuffer())}catch(e){console.warn('music',k,e)}}
+ const t=A.currentTime+.1;for(const k in MUSIC.buf){const g=A.createGain();g.gain.value=0;g.connect(master);const src=A.createBufferSource();src.buffer=MUSIC.buf[k];src.loop=true;src.connect(g);src.start(t);MUSIC.gain[k]=g}
  MUSIC.ready=true}
 function musTick(){if(!A||!MUSIC.ready)return;const now=A.currentTime;
  const inStore=chapter===1&&['play','heartbeat','trap','keypad'].includes(state)&&!P.dead&&!P.won;
@@ -539,95 +539,20 @@ function stepLobby(dt){let mx=0,mz=0;if(keys.KeyW)mz-=1;if(keys.KeyS)mz+=1;if(ke
  me.position.copy(LB.pos);me.rotation.y=LB.face;lobbyPlush.visible=hasPlush();const sw=moving?Math.sin(LB.walk)*.7:0;armL.rotation.x=sw;armR.rotation.x=-sw;legL.rotation.x=-sw;legR.rotation.x=sw;
  // the START pad: stand on it for 3 seconds
  let onPad=null;PADS.forEach(p=>{const on=Math.hypot(LB.pos.x-p.m.position.x,LB.pos.z-p.m.position.z)<4;p.m.material.color.setHex(on?0xffffff:p.hex);if(on)onPad=p});
- if(onPad){LB.count+=dt;$('count').style.display='block';const n=Math.ceil(3-LB.count);$('count').textContent=n>0?n:'GO!';if(LB.count>=3){$('lobbyUI').classList.add('hide');$('achWin').classList.add('hide');me.visible=false;onPad.n===1?startGame(true):startChapter(onPad.n)}}
+ if(onPad){LB.count+=dt;$('count').style.display='block';const n=Math.ceil(3-LB.count);$('count').textContent=n>0?n:'GO!';if(LB.count>=3){$('lobbyUI').classList.add('hide');$('achWin').classList.add('hide');me.visible=false;onPad.n===1?startGame():startChapter(onPad.n)}}
  else{LB.count=0;$('count').style.display='none'}
  camera.position.set(Math.max(L.x-34,Math.min(L.x+34,LB.pos.x+Math.sin(LB.camYaw)*16)),LB.pos.y+8,Math.max(L.z-21,Math.min(L.z+21,LB.pos.z+Math.cos(LB.camYaw)*16)));   /* the camera never goes through the lobby walls */camera.lookAt(LB.pos.x,LB.pos.y+4,LB.pos.z)}
 $('toLobby').onclick=goLobby;
 // ---------------- start ----------------
-function startGame(withIntro){audio();A.resume();chapter=1;chLights(0);AMB.intensity=.55;scene.fog.far=95;bothy.visible=true;setObj('');$('notes').firstChild.textContent='NOTES';P.eyeMul=1;P.spMul=1;if(hb)hbEnd();B.closet=null;rollCode();placeCookies();notes=[];drawNotes();
+function startGame(){audio();A.resume();chapter=1;chLights(0);AMB.intensity=.55;scene.fog.far=95;bothy.visible=true;setObj('');$('notes').firstChild.textContent='NOTES';P.eyeMul=1;P.spMul=1;if(hb)hbEnd();B.closet=null;rollCode();placeCookies();notes=[];drawNotes();
  if(paperMesh){scene.remove(paperMesh);paperMesh=null}if(!clickables.includes(giga)){scene.add(giga);clickables.push(giga)}
  closets.forEach(c=>{c.trap=false;if(c.scratch){c.door.remove(c.scratch);c.scratch=null}});const pick=[...closets].sort(()=>Math.random()-.5).slice(0,1);pick.forEach(c=>{c.trap=true;c.scratch=clawMarks();c.door.add(c.scratch)});   /* ONE trap closet, and it has claw scratches on the door */
  if(!solids.some(b=>b.m===backDoor))solids.push({m:backDoor,x0:-6,x1:6,z0:-202,z1:-201,y1:14});doorOpen=false;backDoor.position.y=7;
  Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0,crouch:false,hidden:null,trap:null,dead:false,won:false,inEnding:false,hp:100,shake:0,down:0});drawHp();resetDrawers();P.vel.set(0,0,0);
  Object.assign(B,{pos:new THREE.Vector3(0,0,-185),target:randomPoint(),mode:'wander',wait:0,chase:false});
- ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));run.start=performance.now();run.hunted=false;me.visible=false;$('lobbyUI').classList.add('hide');
- if(withIntro){startIntro();return}
- $('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
- toast('Find the PINK clue cookies. Stay quiet...',3500)}
+ ['menu','dead','paused'].forEach(i=>$(i).classList.add('hide'));$('hud').classList.remove('hide');state='play';renderer.domElement.requestPointerLock();
+ toast('Find the PINK clue cookies. Stay quiet...',3500);run.start=performance.now();run.hunted=false;me.visible=false;$('lobbyUI').classList.add('hide')}
 $('play').onclick=goLobby;
-// ---------------- CHAPTER 1 INTRO CUTSCENE (FiverFlow's story, 8OTHY'S THEME playing) ----------------
-// You drive up, get out: "I need about 3 cookies..." / "...but they're closed." You find a key someone left,
-// open the store... 8OTHY comes RUSHING at you... then you HEAR a cookie fall and break, and he runs for THAT.
-// No text except what you say. SPACE / ENTER / ESC skips it.
-const INTRO={built:false,t:0};
-function buildIntro(){const I=INTRO;I.g=new THREE.Group();scene.add(I.g);
- const gbox=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);I.g.add(m);return m};
- gbox(260,1,90,0x1c1c20,0,-.5,48);gbox(260,.05,12,0x101012,0,.02,36);for(let x=-120;x<=120;x+=14)gbox(6,.06,.5,0xd8d8a0,x,.05,36);   // parking lot, road, road lines
- const em=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.6,32),MAT.cookie);em.rotation.x=Math.PI/2;em.position.set(0,16,2.9);I.g.add(em);   // a giant cookie over the door
- for(let i=0;i<7;i++){const c=new THREE.Mesh(new THREE.SphereGeometry(.45,8,8),M(0x3a1a0a));c.position.set(Math.cos(i*.9)*2.3,16+Math.sin(i*1.7)*2.3,3.2);I.g.add(c)}
- I.hinge=new THREE.Group();I.hinge.position.set(-3,0,2.8);I.g.add(I.hinge);const door=new THREE.Mesh(new THREE.BoxGeometry(6,10,.4),M(0x3a2a20));door.position.set(3,5,0);I.hinge.add(door);
- const sign=new THREE.Mesh(new THREE.BoxGeometry(3,1.6,.1),new THREE.MeshBasicMaterial({color:0xc81020}));sign.position.set(3,6.5,.3);I.hinge.add(sign);   // red "locked" sign with a padlock, no words
- const lockM=new THREE.MeshBasicMaterial({color:0xffd23b}),lk=new THREE.Mesh(new THREE.BoxGeometry(.8,.7,.12),lockM),sh=new THREE.Mesh(new THREE.TorusGeometry(.3,.08,6,12,Math.PI),lockM);lk.position.set(3,6.3,.4);sh.position.set(3,6.65,.4);I.hinge.add(lk,sh);
- I.key=new THREE.Group();const gold=new THREE.MeshLambertMaterial({color:0xffd23b,emissive:0x5a4000});const ring=new THREE.Mesh(new THREE.TorusGeometry(.35,.1,8,16),gold),shaft=new THREE.Mesh(new THREE.BoxGeometry(.9,.14,.14),gold),tooth=new THREE.Mesh(new THREE.BoxGeometry(.14,.3,.14),gold);
- shaft.position.x=.8;tooth.position.set(1.1,-.18,0);I.key.add(ring,shaft,tooth);I.key.rotation.x=-Math.PI/2;I.key.position.set(-7,.2,8);I.g.add(I.key);   // the key someone left (on the LEFT)
- I.car=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(10,2.4,5),M(0x2a4a8a)),cab=new THREE.Mesh(new THREE.BoxGeometry(5,2,4.4),M(0x1a2a4a));body.position.y=1.8;cab.position.set(-.5,3.9,0);I.car.add(body,cab);
- I.wheels=[];for(const[x,z]of[[-3.2,2.5],[3.2,2.5],[-3.2,-2.5],[3.2,-2.5]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.6,12),M(0x0a0a0a));w.rotation.x=Math.PI/2;w.position.set(x,1,z);I.car.add(w);I.wheels.push(w)}
- for(const z of[-1.6,1.6]){const hl=new THREE.Mesh(new THREE.BoxGeometry(.2,.6,1),new THREE.MeshBasicMaterial({color:0xfff2a0}));hl.position.set(5.1,2.2,z);I.car.add(hl)}I.g.add(I.car);
- I.lamp=new THREE.PointLight(0xffd8a0,2.2,90,1.1);I.lamp.position.set(-6,16,18);scene.add(I.lamp);I.lamp.visible=false;I.g.visible=false;I.built=true}
-function startIntro(){if(!INTRO.built)buildIntro();const I=INTRO;Object.assign(I,{t:0,done:{},crashed:false,themeSrc:null,themeG:null,bpos:null});
- I.g.visible=true;I.lamp.visible=true;I.hinge.rotation.y=0;I.key.visible=true;me.visible=false;title.visible=false;bothy.visible=false;B.pos.set(0,0,-185);B.wait=999;
- $('hud').classList.add('hide');state='intro';document.exitPointerLock();AMB.intensity=.85;
- if(A){const o=A.createOscillator();o.type='sawtooth';o.frequency.value=45;const f=A.createBiquadFilter();f.type='lowpass';f.frequency.value=170;const g=A.createGain();g.gain.value=.13;o.connect(f);f.connect(g);g.connect(master);o.start();I.engine={o,g}}}   // car engine
-function introTheme(){const I=INTRO;if(I.themeSrc||!A||!MUSIC.buf['theme-intro'])return;const g=A.createGain();g.gain.value=.85;g.connect(master);const src=A.createBufferSource();src.buffer=MUSIC.buf['theme-intro'];src.connect(g);src.start(0,Math.min(I.t,20));I.themeSrc=src;I.themeG=g}
-function crashSound(pan){if(!A)return;const p=A.createStereoPanner();p.pan.value=pan;p.connect(master);nz(.35,env(.9,.002,.3,p),'highpass',1500);nz(.5,env(.7,.002,.45,p),'lowpass',500);setTimeout(()=>{if(A)nz(.25,env(.5,.002,.2,p),'bandpass',2400)},130)}
-function endIntro(){const I=INTRO;if(state!=='intro')return;sayTok++;$('talk').style.display='none';I.g.visible=false;I.lamp.visible=false;me.visible=false;title.visible=true;bothy.visible=true;
- if(I.engine){try{I.engine.o.stop()}catch(e){}I.engine=null}
- if(I.themeG){I.themeG.gain.setTargetAtTime(0,A.currentTime,.6);const src=I.themeSrc;setTimeout(()=>{try{src.stop()}catch(e){}},3000)}I.themeSrc=null;
- Object.assign(P,{pos:new THREE.Vector3(0,0,-8),yaw:0,pitch:0});P.vel.set(0,0,0);P.safe=2;
- B.pos.copy(I.bpos||new THREE.Vector3(-20,0,-110));B.wait=0;B.mode='hunt';B.target=new THREE.Vector3(-45,0,-58);   // he runs for the broken cookie
- AMB.intensity=.55;$('hud').classList.remove('hide');state='play';toast('Find the PINK clue cookies. Stay quiet...',3500);run.start=performance.now()}
-addEventListener('keydown',e=>{if(state==='intro'&&(e.code==='Space'||e.code==='Enter'||e.code==='Escape')){e.preventDefault();endIntro()}});
-// where you walk: [time, x, z]
-const INTRO_PATH=[[6.3,-19,27],[10,-2,9],[13,-2,9],[14.6,-6.4,8.6],[15.4,-6.4,8.6],[17,0,5.5],[17.6,0,5.5],[19.3,0,.4]];
-function stepIntro(dt,now){const I=INTRO;I.t+=dt;const t=I.t,once=k=>{if(I.done[k])return false;I.done[k]=true;return true};introTheme();
- const ease=k=>k<=0?0:k>=1?1:1-Math.pow(1-k,3),cam=(x,y,z,lx,ly,lz)=>{camera.position.set(x,y,z);camera.lookAt(lx,ly,lz)};
- if(t<19.5){
-  // 1) DRIVING to the store
-  const k=ease(t/6);I.car.position.set(-120+94*k,0,30);I.wheels.forEach(w=>w.rotation.y-=dt*(1-k)*14);
-  if(I.engine)I.engine.o.frequency.value=38+30*(1-k);
-  if(t>=6&&once('park')){if(I.engine){I.engine.g.gain.setTargetAtTime(0,A.currentTime,.3);const o=I.engine.o;setTimeout(()=>{try{o.stop()}catch(e){}},1500);I.engine=null}setTimeout(()=>SFX.door(),300)}
-  // 2) YOU, walking along the path
-  me.visible=t>=6.3;let px=-19,pz=27,moving=false,fx=0,fz=-1;
-  for(let i=0;i<INTRO_PATH.length-1;i++){const[a,ax,az]=INTRO_PATH[i],[b,bx,bz]=INTRO_PATH[i+1];if(t>=a&&t<b){const q=(t-a)/(b-a);px=ax+(bx-ax)*q;pz=az+(bz-az)*q;moving=Math.hypot(bx-ax,bz-az)>.1;if(moving){fx=bx-ax;fz=bz-az}}}
-  if(t>=INTRO_PATH[INTRO_PATH.length-1][0]){px=0;pz=.4}
-  me.position.set(px,0,pz);if(moving)me.rotation.y=Math.atan2(fx,fz);else if(t>13&&t<15.4)me.rotation.y=Math.atan2(-1,-.2);else if(t>=6.3)me.rotation.y=Math.PI;
-  if(moving){I.stepT=(I.stepT||0)-dt;if(I.stepT<=0){I.stepT=.36;SFX.step(.8)}}
-  LB.walk+=moving?dt*10:0;const sw=moving?Math.sin(LB.walk)*.7:0;armL.rotation.x=sw;armR.rotation.x=-sw;legL.rotation.x=-sw;legR.rotation.x=sw;
-  if(t>=14.9&&t<15.4)armR.rotation.x=-1.4;                                                // reach down for the key
-  // what you SAY (the only text)
-  if(t>=8&&once('say1'))say([['You','I need about 3 cookies...']]);
-  if(t>=11.3&&once('say2'))say([['You',"...but they're closed."]]);
-  // the key
-  I.key.rotation.z=Math.sin(now/300)*.3;if(t>=15&&once('key')){I.key.visible=false;if(A)[1568,2093,2637].forEach((f,i)=>setTimeout(()=>osc('triangle',f,.15,env(.12,.002,.14)),i*70))}
-  // the door unlocks and swings open
-  if(t>=17.4&&once('unlock')){SFX.beep();setTimeout(()=>SFX.door(),200)}
-  if(t>=17.6)I.hinge.rotation.y=-1.7*ease((t-17.6)/.9);
-  // the camera
-  if(t<6)cam(I.car.position.x-4,5,52,I.car.position.x+4,2,30);
-  else if(t<10.3)cam(16,6.5,30,px,3.5,pz);
-  else if(t<13)cam(3,5.5,15,0,5.5,2.8);                                                    // the locked door
-  else if(t<15.6)cam(-14,4,15,-6.4,.8,8.4);                                                  // the key on the ground
-  else cam(px+2,6.5,pz+11,0,5,2.8);
- }else{
-  // 3) INSIDE: first person. 8OTHY comes RUSHING at you...
-  if(once('inside')){SFX.scream();P.shake=.5;me.visible=false;I.g.visible=false;I.lamp.visible=false;AMB.intensity=.55;bothy.visible=true;B.pos.set(0,0,-72);P.pos.set(0,0,-8);P.yaw=0;lastB=null;stepClock=0}
-  if(!I.crashed){I.hb=(I.hb||0)-dt;if(I.hb<=0){I.hb=.45;SFX.heart(1.2)}const d=B.pos.z-P.pos.z;B.pos.z+=Math.min(20*dt,Math.max(0,-d-10));bothy.rotation.y=0;
-   if(t>=23.1){I.crashed=true;crashSound(-.85);I.turnT=0}}                                // ...a cookie falls and BREAKS somewhere on the left
-  else{I.turnT+=dt;const tx=-45,tz=-58,dx=tx-B.pos.x,dz=tz-B.pos.z,want=Math.atan2(dx,dz);bothy.rotation.y+=(want-bothy.rotation.y)*Math.min(1,dt*6);
-   if(I.turnT>.7){const dd=Math.hypot(dx,dz);if(dd>.5){B.pos.x+=dx/dd*16*dt;B.pos.z+=dz/dd*16*dt}}}
-  bothy.position.set(B.pos.x,Math.abs(Math.sin(now/90))*.3,B.pos.z);bothySteps(dt);I.bpos=B.pos.clone();
-  const sk=(P.shake||0)>0?(P.shake-=dt,P.shake*.6):0;camera.position.set(R(-sk,sk),4.5+R(-sk,sk),-8);camera.lookAt(B.pos.x*.35,5.5,B.pos.z);
-  if(t>=26.2)endIntro()}}
 document.addEventListener('click',e=>{if(e.target.tagName==='BUTTON')setTimeout(()=>e.target.blur(),0)});   // buttons never keep focus, so SPACE can't press them
 // ---------------- CHAPTERS 2, 3, 4 share these helpers ----------------
 let chapter=1;const CH={growl:0};
@@ -1095,7 +1020,6 @@ function collide(p,crouching){for(const b of solids){if(b.closet&&P.hidden)conti
 let last=performance.now(),stepT=0,heartT=0,flickT=0;
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
  if(state==='lobby'){stepLobby(dt);renderer.render(scene,camera);return}
- if(state==='intro'){stepIntro(dt,now);renderer.render(scene,camera);return}
  if(state==='heartbeat')stepHeartbeat(dt);
  if((state==='play'||state==='keypad'||state==='trap'||state==='heartbeat'||state==='talk')&&!P.dead){const canMove=state==='play';
   // moving
@@ -1143,5 +1067,5 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  viewPlush.visible=!!P.holdPlush&&hasPlush()&&!P.dead&&!P.hidden&&state!=='lobby';if(viewPlush.visible)viewPlush.rotation.z=Math.sin(now/400)*.06;
  renderer.render(scene,camera)}
 requestAnimationFrame(loop);
-me.visible=false;checkPlush();window.CB={INTRO,startIntro,endIntro,stomp,bothySteps,SET,applySettings,get freeMode(){return freeMode},set freeMode(v){freeMode=v;drawFree()},snapCookie,hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
+me.visible=false;checkPlush();window.CB={stomp,bothySteps,SET,applySettings,get freeMode(){return freeMode},set freeMode(v){freeMode=v;drawFree()},snapCookie,hasPlush,viewPlush,lobbyPlush,CH,startChapter,get chapter(){return chapter},say,chapterWin,drawers,openDrawer,minis,get angryT(){return angryT},goLobby,LB,SAVE,earn,beatChapter,win,startPad,startHeartbeat,hbPress,get hb(){return hb},closetFront,enterCloset,P,B,get CODE(){return CODE},startGame,die,openDoor,closets,get state(){return state},set state(v){state=v},interact,makeNoise,solids,clickables,lookTarget};
 </script></body></html>
