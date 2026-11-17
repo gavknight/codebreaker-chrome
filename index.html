@@ -391,7 +391,8 @@ function win(){if(P.won)return;P.won=true;state='won';{const secs=(performance.n
 const sc=$('scare'),sx=sc.getContext('2d');
 let freeSaveT=0;
 function die(why){if(P.dead||P.won)return;
- if(freeMode){if(performance.now()-freeSaveT>2500){freeSaveT=performance.now();toast("🆓 FREE MODE: you can't die!",1600)}if(!P.won)$('revive').onclick();return}   // FiverFlow: in Free Mode you CAN'T dieP.dead=true;state='dead';if(!freeMode){SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths')}$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();jumpscareSound();
+ if(freeMode){if(performance.now()-freeSaveT>2500){freeSaveT=performance.now();toast("🆓 FREE MODE: you can't die!",1600)}if(!P.won)$('revive').onclick();return}   /* FiverFlow: in Free Mode you CAN'T die */
+P.dead=true;state='dead';if(!freeMode){SAVE.deaths++;SAVE.streak={};saveGame();if(SAVE.deaths>=50)earn('deaths')}$('keypad').classList.add('hide');$('trap').classList.add('hide');document.exitPointerLock();sc.width=innerWidth;sc.height=innerHeight;sc.style.display='block';const t0=performance.now();jumpscareSound();
  /* Gavin's jumpscare: 8OTHY's head fills the screen, it opens into a GIANT round mouth over 2 seconds, then he PULLS YOU IN */
  (function jump(){const tt=(performance.now()-t0)/1000,W=sc.width,H=sc.height,base=Math.min(W,H)*.42;
   if(tt>2.75){sc.style.display='none';if(state==='dead'){$('deadTip').textContent=why;$('dead').classList.remove('hide')}return}
