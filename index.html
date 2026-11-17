@@ -64,11 +64,9 @@ canvas{display:block}
 </style></head><body>
 <div id="hud" class="hide"><div id="heart"></div><div id="dot"></div><div id="notes"><b>NOTES</b><div id="noteList">Find the clue cookies...</div></div><div id="toast"></div><div id="freeTag">🆓 FREE MODE</div><div id="obj"></div><div id="prompt"></div><div id="crouch">🚶 walking (loud)</div><div id="hpWrap"><b>❤️ HEALTH <span id="hpNum">100</span></b><div id="hpBar"><div id="hpFill"></div></div></div><div id="slap">SLAP!</div><div id="angry">BOOM! 8OTHY ANGERED!</div></div>
 <div id="slats"></div>
-<div id="menu" class="screen"><h1>CODEBREAKER</h1><h2>[HORROR]</h2><p style="color:#ffd23b;font-family:'Arial Black'">CHAPTERS 1 - 6</p>
- <p>You're trapped in the Giga Cookie Store. Find the clue cookies, crack the code and escape.<br><b>8OTHY hunts by SOUND.</b></p>
- <button class="btn" id="play">▶ PLAY</button>
- <p style="font-size:15px">WASD move · Mouse look · <b>Hold SHIFT to crouch (quiet)</b> · Space jump · <b>E / Click</b> to use · Esc pause</p>
- <p style="font-size:13px;opacity:.5">A game by FiverFlow · Chrome edition</p></div>
+<div id="menu" class="screen" style="justify-content:flex-start;padding-top:5vh"><!-- FiverFlow's layout: the thumbnail big at the top, PLAY in the bottom right -->
+ <img src="menu.png" alt="CODEBREAKER [HORROR]" style="width:min(80vw,130vh);border:3px solid #ff2235;border-radius:14px;box-shadow:0 0 40px #ff001880">
+ <button class="btn" id="play" style="position:absolute;right:5vw;bottom:6vh;font-size:40px;padding:16px 60px">▶ PLAY</button></div>
 <div id="dead" class="screen hide"><h1 style="font-size:90px">YOU DIED</h1><p id="deadTip"></p><button class="btn" id="revive">❤️ REVIVE (FREE)</button><button class="btn" id="restart">🔁 START OVER</button><button class="btn" id="toLobby">🏠 LOBBY</button></div>
 <div id="paused" class="screen hide"><h2>PAUSED</h2><button class="btn" id="resume">▶ RESUME</button></div>
 <div id="keypad" class="hide"><div class="panel"><div id="kdisp">_ _ _ _</div><div id="kgrid"></div><p style="font-family:system-ui;margin:12px 0 0;opacity:.7">Esc to step away</p></div></div>
